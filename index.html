@@ -97,15 +97,20 @@
     background: var(--paper-deep);
     border-top: 1.5px solid var(--ink);
     display: flex;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
     z-index: 50;
     padding-bottom: env(safe-area-inset-bottom);
   }
+  .bottom-nav::-webkit-scrollbar { display: none; }
 
   .nav-btn {
-    flex: 1;
+    flex: 0 0 auto;
+    min-width: 56px;
     background: none;
     border: none;
-    padding: 10px 4px;
+    padding: 10px 6px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -975,6 +980,51 @@
   }
   .help-card strong { color: var(--ink); }
 
+  /* ── NOTE DRAFT ────────────────────── */
+  .note-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .note-title-input {
+    width: 100%;
+    background: var(--paper-lite);
+    border: 1px solid var(--ink);
+    padding: 10px 12px;
+    font-family: 'Shippori Mincho', serif;
+    font-size: 15px;
+    color: var(--ink);
+    margin-bottom: 10px;
+  }
+  .note-draft {
+    width: 100%;
+    min-height: 360px;
+    background: var(--paper-lite);
+    border: 1px solid var(--ink);
+    padding: 12px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px;
+    line-height: 1.85;
+    resize: vertical;
+    color: var(--ink);
+  }
+  .note-hint {
+    font-size: 11px;
+    color: var(--gray-soft);
+    text-align: center;
+    margin-top: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.05em;
+  }
+  .note-copy-btn.copied {
+    background: var(--green);
+    color: var(--paper);
+    border-color: var(--green);
+  }
+
   /* utility */
   .hidden { display: none !important; }
   .text-center { text-align: center; }
@@ -998,7 +1048,7 @@
       margin: 0 auto;
       z-index: 50;
     }
-    .nav-btn { padding: 14px 6px; }
+    .nav-btn { padding: 14px 6px; flex: 1; min-width: 0; }
     .nav-btn .icon { font-size: 18px; }
     .container { padding: 24px; }
   }
@@ -1305,6 +1355,38 @@
     </div>
   </section>
 
+  <!-- ── NOTE 投稿下書き ─────────────── -->
+  <section class="panel" id="panel-note">
+    <h2 class="section-title">note下書き <span class="section-title-en">Daily Draft</span></h2>
+    <div class="note-meta" id="noteMeta">— / —</div>
+
+    <div class="settings-section" style="margin-bottom: 14px;">
+      <h3>タイトル</h3>
+      <input type="text" id="noteTitleInput" class="note-title-input" placeholder="タイトルを入力">
+    </div>
+
+    <div class="settings-section" style="margin-bottom: 14px;">
+      <h3>本文</h3>
+      <p class="setting-desc">編集してからコピーできます。</p>
+      <textarea id="noteDraft" class="note-draft"></textarea>
+    </div>
+
+    <button class="submit-btn note-copy-btn" id="btnCopyNote">クリップボードにコピー</button>
+    <button class="ghost-btn" id="btnRegenNote" style="margin-top: 8px;">再生成する</button>
+
+    <div class="note-hint">コピーして note.com に貼り付けてください</div>
+
+    <div class="settings-section" style="margin-top: 20px;">
+      <h3>連載の設定</h3>
+      <p class="setting-desc">連載開始日を入れると #何日目 が自動計算されます。</p>
+      <div class="field">
+        <label>連載開始日</label>
+        <input type="date" id="noteSeriesStartInput">
+      </div>
+      <button class="ghost-btn" id="btnSaveNoteConfig" style="margin-top: 8px;">保存</button>
+    </div>
+  </section>
+
 </div>
 
 <!-- ════════════════════════════════ -->
@@ -1338,6 +1420,10 @@
   <button class="nav-btn" data-panel="settings">
     <span class="icon">⚙</span>
     <span class="lbl">設定</span>
+  </button>
+  <button class="nav-btn" data-panel="note">
+    <span class="icon">✎</span>
+    <span class="lbl">note</span>
   </button>
 </nav>
 
@@ -1450,7 +1536,8 @@ const DEFAULT_DATA = {
   ],
   // 設定
   config: {
-    monthlyDebtTarget: 156000, // 月のリボ返済目標
+    monthlyDebtTarget: 156000,
+    noteSeriesStart: '',
   },
 };
 
@@ -1488,7 +1575,7 @@ function loadData() {
       budgets: parsed.budgets || DEFAULT_DATA.budgets,
       monthlyIncomes: parsed.monthlyIncomes || {},
       events: parsed.events || [],
-      config: parsed.config || DEFAULT_DATA.config,
+      config: Object.assign({}, DEFAULT_DATA.config, parsed.config || {}),
     };
   } catch(e) {
     return JSON.parse(JSON.stringify(DEFAULT_DATA));
@@ -1618,6 +1705,7 @@ function renderAll() {
   renderHistory();
   renderAccounts();
   renderSettings();
+  renderNote();
 }
 
 // ── HOME ──────────────────────────────
@@ -2251,6 +2339,82 @@ function renderSettings() {
   document.getElementById('settingCategories').value = DATA.categories.join(', ');
 }
 
+// ── NOTE DRAFT ────────────────────────
+function renderNote() {
+  const now = new Date();
+  const ms = getMonthSummary(now.getFullYear(), now.getMonth());
+  const totalBudget = Object.values(DATA.budgets).reduce((a, b) => a + Number(b || 0), 0);
+  const remaining = totalBudget - ms.expense;
+  const usedPct = totalBudget > 0 ? Math.round((ms.expense / totalBudget) * 100) : 0;
+  const totals = getTotals();
+
+  const startRaw = DATA.config.noteSeriesStart;
+  let postNum = 1;
+  if (startRaw) {
+    const startDate = new Date(startRaw);
+    startDate.setHours(0, 0, 0, 0);
+    const today0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    postNum = Math.max(1, Math.floor((today0 - startDate) / 86400000) + 1);
+  }
+
+  const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+  const wday = weekdays[now.getDay()];
+  const dateStr = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日（${wday}）`;
+
+  const todayIso = todayStr();
+  const todayTx = DATA.transactions.filter(t => t.date === todayIso && t.type === 'expense');
+  const todaySpent = todayTx.reduce((s, t) => s + Number(t.amount), 0);
+
+  const metaEl = document.getElementById('noteMeta');
+  if (metaEl) metaEl.textContent = `SERIES DAY ${postNum} · ${dateStr}`;
+
+  const titleEl = document.getElementById('noteTitleInput');
+  if (titleEl && !titleEl.dataset.edited) {
+    titleEl.value = `【家計簿日記 #${postNum}】${dateStr}`;
+  }
+
+  const startInput = document.getElementById('noteSeriesStartInput');
+  if (startInput) startInput.value = startRaw || '';
+
+  let body = `${dateStr}\n\n`;
+
+  body += `■ 今日の支出\n`;
+  if (todayTx.length === 0) {
+    body += `本日の支出はゼロ円でした。\n`;
+  } else {
+    for (const t of todayTx) {
+      body += `・${t.category || 'その他'}　${fmtYen(t.amount)}${t.memo ? '（' + t.memo + '）' : ''}\n`;
+    }
+    body += `合計：${fmtYen(todaySpent)}\n`;
+  }
+
+  body += `\n■ 今月の状況（${now.getMonth() + 1}月）\n`;
+  body += `予算：${fmtYen(totalBudget)}\n`;
+  body += `使用済み：${fmtYen(ms.expense)}（${usedPct}%）\n`;
+  body += `残り：${fmtYen(remaining)}\n`;
+
+  const catEntries = Object.entries(ms.catSpent).sort((a, b) => b[1] - a[1]).slice(0, 3);
+  if (catEntries.length > 0) {
+    body += `\nカテゴリ別トップ3\n`;
+    for (const [cat, amt] of catEntries) {
+      const budget = DATA.budgets[cat] || 0;
+      const pct = budget > 0 ? Math.round((amt / budget) * 100) : null;
+      body += `・${cat}：${fmtYen(amt)}${pct !== null ? `（予算の${pct}%）` : ''}\n`;
+    }
+  }
+
+  body += `\n■ 純資産\n`;
+  body += `資産：${fmtYen(totals.assets)}\n`;
+  body += `負債：${fmtYen(totals.liab)}\n`;
+  body += `純資産：${fmtYen(totals.net)}\n`;
+
+  body += `\n---\n毎日の記録が、未来の自分を守る。\n\n`;
+  body += `#家計簿 #節約 #資産形成 #お金の管理 #kakeibo`;
+
+  const draftEl = document.getElementById('noteDraft');
+  if (draftEl) draftEl.value = body;
+}
+
 // ═══════════════════════════════════════════════════════════════
 // イベントハンドラ
 // ═══════════════════════════════════════════════════════════════
@@ -2494,6 +2658,50 @@ document.getElementById('btnClearAll').addEventListener('click', () => {
   saveData();
   renderAll();
   alert('削除しました');
+});
+
+// note下書き
+document.getElementById('btnCopyNote').addEventListener('click', async () => {
+  const title = document.getElementById('noteTitleInput').value;
+  const draft = document.getElementById('noteDraft').value;
+  const text = title + '\n\n' + draft;
+  try {
+    await navigator.clipboard.writeText(text);
+    const btn = document.getElementById('btnCopyNote');
+    btn.textContent = 'コピーしました！';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = 'クリップボードにコピー';
+      btn.classList.remove('copied');
+    }, 2500);
+  } catch (e) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    alert('コピーしました');
+  }
+});
+
+document.getElementById('btnRegenNote').addEventListener('click', () => {
+  const titleEl = document.getElementById('noteTitleInput');
+  delete titleEl.dataset.edited;
+  renderNote();
+});
+
+document.getElementById('noteTitleInput').addEventListener('input', function () {
+  this.dataset.edited = '1';
+});
+
+document.getElementById('btnSaveNoteConfig').addEventListener('click', () => {
+  DATA.config.noteSeriesStart = document.getElementById('noteSeriesStartInput').value;
+  saveData();
+  const titleEl = document.getElementById('noteTitleInput');
+  delete titleEl.dataset.edited;
+  renderNote();
+  alert('保存しました');
 });
 
 // 初期化
