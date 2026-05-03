@@ -395,14 +395,30 @@
     background: var(--paper);
     border: 1px solid var(--gray-soft);
     overflow: hidden;
+    display: flex;
   }
   .budget-bar-fill {
     height: 100%;
     background: var(--green);
     transition: width 0.4s ease;
+    flex-shrink: 0;
   }
   .budget-bar-fill.warn { background: var(--warn); }
   .budget-bar-fill.over { background: var(--accent); }
+  .budget-bar-reserved {
+    height: 100%;
+    flex-shrink: 0;
+    background: repeating-linear-gradient(
+      45deg,
+      var(--gold) 0px,
+      var(--gold) 2px,
+      transparent 2px,
+      transparent 6px
+    );
+    opacity: 0.8;
+    transition: width 0.4s ease;
+  }
+  .budget-row-amt .reserved { color: var(--gold); font-size: 10px; }
 
   /* ── RECORD FORM ────────────────────── */
   .form-card {
@@ -1261,6 +1277,14 @@
       <button class="ghost-btn" id="btnSaveBudgets" style="margin-top: 12px;">保存</button>
     </div>
 
+    <!-- 固定費の見込み計上 -->
+    <div class="settings-section">
+      <h3>固定費の見込み計上</h3>
+      <p class="setting-desc">毎月ほぼ決まっている支出を先に予算から引いておきます。実際に入力するまでの間も「使用済み」扱いにして、残額を正確に見せます。0にすると無効。</p>
+      <div id="fixedExpensesList"></div>
+      <button class="ghost-btn" id="btnSaveFixedExpenses" style="margin-top: 12px;">保存</button>
+    </div>
+
     <!-- リボ初期残高 -->
     <div class="settings-section">
       <h3>リボ・分割 初期残高</h3>
@@ -1448,6 +1472,14 @@ const DEFAULT_DATA = {
   events: [
     { id: 'e1', name: '冠婚葬祭備え', amount: 150000, date: '2027-03-31', saved: 0 },
   ],
+  // 固定費の月間見込み額(未払いでも予算から先引きされる)
+  fixedExpenses: {
+    '光熱費': 7500,
+    '通信費': 6000,
+    '保険': 8000,
+    '奨学金': 33936,
+    'サブスク': 2400,
+  },
   // 設定
   config: {
     monthlyDebtTarget: 156000, // 月のリボ返済目標
@@ -1486,6 +1518,7 @@ function loadData() {
       transactions: parsed.transactions || [],
       categories: parsed.categories || DEFAULT_CATEGORIES,
       budgets: parsed.budgets || DEFAULT_DATA.budgets,
+      fixedExpenses: parsed.fixedExpenses || DEFAULT_DATA.fixedExpenses,
       monthlyIncomes: parsed.monthlyIncomes || {},
       events: parsed.events || [],
       config: parsed.config || DEFAULT_DATA.config,
@@ -1628,8 +1661,16 @@ function renderHome() {
 
   // 今月の総予算 = カテゴリ予算の合計
   const totalBudget = Object.values(DATA.budgets).reduce((a,b) => a + Number(b||0), 0);
-  const remaining = totalBudget - ms.expense;
-  const usedPct = totalBudget > 0 ? Math.min(100, (ms.expense / totalBudget) * 100) : 0;
+
+  // 固定費見込み: 実績未満なら0、超えた分だけ追加で引く
+  let fixedReservedTotal = 0;
+  for (const [cat, fixedAmt] of Object.entries(DATA.fixedExpenses || {})) {
+    const actual = ms.catSpent[cat] || 0;
+    fixedReservedTotal += Math.max(0, Number(fixedAmt) - actual);
+  }
+  const effectiveExpense = ms.expense + fixedReservedTotal;
+  const remaining = totalBudget - effectiveExpense;
+  const usedPct = totalBudget > 0 ? Math.min(100, (effectiveExpense / totalBudget) * 100) : 0;
 
   // ヒーロー
   document.getElementById('heroValue').innerHTML =
@@ -1640,8 +1681,11 @@ function renderHome() {
   if (usedPct > 90) progEl.classList.add('danger');
   else if (usedPct > 70) progEl.classList.add('warn');
 
+  const reservedNote = fixedReservedTotal > 0
+    ? ` <span style="color:var(--gold);font-size:11px;">+ 見込み ${fmtYen(fixedReservedTotal)}</span>`
+    : '';
   document.getElementById('heroSub').innerHTML =
-    `予算 <span class="num">${fmtYen(totalBudget)}</span> / 使った <span class="num">${fmtYen(ms.expense)}</span>(${Math.round(usedPct)}%)`;
+    `予算 <span class="num">${fmtYen(totalBudget)}</span> / 使った <span class="num">${fmtYen(ms.expense)}</span>${reservedNote}(${Math.round(usedPct)}%)`;
 
   // 判断ボックス
   renderJudge(remaining, totals);
@@ -1733,15 +1777,18 @@ function renderJudge(monthRemaining, totals) {
 
 function renderBudgetList(catSpent) {
   const el = document.getElementById('budgetList');
-  // 予算が設定されているカテゴリだけ、使った順にソート
+  const fixed = DATA.fixedExpenses || {};
   const rows = [];
   for (const cat of DATA.categories) {
     const budget = Number(DATA.budgets[cat] || 0);
     const spent = Number(catSpent[cat] || 0);
-    if (budget === 0 && spent === 0) continue;
-    rows.push({ cat, budget, spent });
+    const fixedAmt = Number(fixed[cat] || 0);
+    const reserved = Math.max(0, fixedAmt - spent);
+    if (budget === 0 && spent === 0 && reserved === 0) continue;
+    rows.push({ cat, budget, spent, reserved });
   }
-  rows.sort((a, b) => b.spent - a.spent);
+  // 実績＋見込みの合計が多い順にソート
+  rows.sort((a, b) => (b.spent + b.reserved) - (a.spent + a.reserved));
 
   if (rows.length === 0) {
     el.innerHTML = `<div style="padding:20px;text-align:center;color:var(--gray);font-style:italic;font-size:12px;">予算カテゴリを設定しましょう。<br>(設定タブから)</div>`;
@@ -1749,20 +1796,27 @@ function renderBudgetList(catSpent) {
   }
 
   el.innerHTML = rows.map(r => {
-    const pct = r.budget > 0 ? Math.min(100, (r.spent / r.budget) * 100) : 0;
+    const effective = r.spent + r.reserved;
+    const pctSpent = r.budget > 0 ? Math.min(100, (r.spent / r.budget) * 100) : 0;
+    const pctReserved = r.budget > 0 ? Math.min(100 - pctSpent, (r.reserved / r.budget) * 100) : 0;
+    const pctTotal = pctSpent + pctReserved;
     let cls = '';
-    if (pct >= 100) cls = 'over';
-    else if (pct >= 80) cls = 'warn';
+    if (pctTotal >= 100) cls = 'over';
+    else if (pctTotal >= 80) cls = 'warn';
+    const reservedNote = r.reserved > 0
+      ? ` <span class="reserved">+見込み${fmtYen(r.reserved)}</span>`
+      : '';
     return `
       <div class="budget-row">
         <div class="budget-row-top">
           <span class="budget-row-name">${escapeHtml(r.cat)}</span>
           <span class="budget-row-amt">
-            <span class="used">${fmtYen(r.spent)}</span> / ${fmtYen(r.budget)}
+            <span class="used">${fmtYen(r.spent)}</span>${reservedNote} / ${fmtYen(r.budget)}
           </span>
         </div>
         <div class="budget-bar-bg">
-          <div class="budget-bar-fill ${cls}" style="width:${pct}%"></div>
+          <div class="budget-bar-fill ${cls}" style="width:${pctSpent}%"></div>
+          <div class="budget-bar-reserved" style="width:${pctReserved}%"></div>
         </div>
       </div>
     `;
@@ -2228,6 +2282,15 @@ function renderSettings() {
     </div>
   `).join('');
 
+  // 固定費の見込み
+  const fixedEl = document.getElementById('fixedExpensesList');
+  fixedEl.innerHTML = DATA.categories.map(c => `
+    <div class="field" style="margin-bottom:8px;">
+      <label>${escapeHtml(c)}(円/月)</label>
+      <input type="number" data-fixed="${escapeHtml(c)}" value="${Number((DATA.fixedExpenses||{})[c]||0)}" step="100" inputmode="numeric" style="font-size:14px;padding:8px;">
+    </div>
+  `).join('');
+
   // リボ初期残高
   const debtInit = document.getElementById('debtInitGrid');
   const credAccts = DATA.accounts.filter(a => a.type === 'credit');
@@ -2408,6 +2471,16 @@ document.getElementById('btnSaveIncomes').addEventListener('click', () => {
 document.getElementById('btnSaveBudgets').addEventListener('click', () => {
   document.querySelectorAll('[data-cat]').forEach(inp => {
     DATA.budgets[inp.dataset.cat] = Number(inp.value) || 0;
+  });
+  saveData();
+  alert('保存しました');
+  renderAll();
+});
+
+document.getElementById('btnSaveFixedExpenses').addEventListener('click', () => {
+  if (!DATA.fixedExpenses) DATA.fixedExpenses = {};
+  document.querySelectorAll('[data-fixed]').forEach(inp => {
+    DATA.fixedExpenses[inp.dataset.fixed] = Number(inp.value) || 0;
   });
   saveData();
   alert('保存しました');
