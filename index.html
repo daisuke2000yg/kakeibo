@@ -1434,10 +1434,18 @@
       <button class="ghost-btn" id="btnSaveFixedExpenses" style="margin-top: 12px;">保存</button>
     </div>
 
-    <!-- リボ初期残高 -->
+    <!-- 銀行・現金の現在残高 -->
     <div class="settings-section">
-      <h3>リボ・分割 初期残高</h3>
-      <p class="setting-desc">クレジットカードの「初期残高」(リボや分割の現在の残高)を入れます。</p>
+      <h3>銀行・現金の現在残高</h3>
+      <p class="setting-desc">各口座の現在の残高を入力してください。新しい口座は「口座タブ」から追加できます。</p>
+      <div id="bankInitGrid"></div>
+      <button class="ghost-btn" id="btnSaveBankInit" style="margin-top: 12px;">保存</button>
+    </div>
+
+    <!-- クレジットカード残高 -->
+    <div class="settings-section">
+      <h3>クレジットカードの現在残高</h3>
+      <p class="setting-desc">リボ残高＋今月の請求額(未払い分) を合計した金額を入力します。これが「借金」として純資産の計算に使われます。</p>
       <div id="debtInitGrid"></div>
       <button class="ghost-btn" id="btnSaveDebtInit" style="margin-top: 12px;">保存</button>
     </div>
@@ -2611,7 +2619,21 @@ function renderSettings() {
     </div>
   `).join('');
 
-  // リボ初期残高
+  // 銀行・現金残高
+  const bankInitEl = document.getElementById('bankInitGrid');
+  const bankAccts = DATA.accounts.filter(a => a.type === 'cash' || a.type === 'bank' || a.type === 'savings');
+  if (bankAccts.length === 0) {
+    bankInitEl.innerHTML = `<div class="help-card">口座タブから銀行・現金口座を追加してください。</div>`;
+  } else {
+    bankInitEl.innerHTML = bankAccts.map(a => `
+      <div class="field" style="margin-bottom:8px;">
+        <label>${escapeHtml(a.name)}(円)</label>
+        <input type="number" data-acct-bank="${a.id}" value="${Number(a.opening||0)}" step="100" inputmode="numeric" style="font-size:14px;padding:8px;">
+      </div>
+    `).join('');
+  }
+
+  // クレジットカード残高
   const debtInit = document.getElementById('debtInitGrid');
   const credAccts = DATA.accounts.filter(a => a.type === 'credit');
   if (credAccts.length === 0) {
@@ -2801,6 +2823,16 @@ document.getElementById('btnSaveFixedExpenses').addEventListener('click', () => 
   if (!DATA.fixedExpenses) DATA.fixedExpenses = {};
   document.querySelectorAll('[data-fixed]').forEach(inp => {
     DATA.fixedExpenses[inp.dataset.fixed] = Number(inp.value) || 0;
+  });
+  saveData();
+  alert('保存しました');
+  renderAll();
+});
+
+document.getElementById('btnSaveBankInit').addEventListener('click', () => {
+  document.querySelectorAll('[data-acct-bank]').forEach(inp => {
+    const a = DATA.accounts.find(x => x.id === inp.dataset.acctBank);
+    if (a) a.opening = Number(inp.value) || 0;
   });
   saveData();
   alert('保存しました');
