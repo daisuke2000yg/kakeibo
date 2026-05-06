@@ -1823,7 +1823,7 @@ const DEFAULT_DATA = {
   },
   // 設定
   config: {
-    monthlyDebtTarget: 8000,
+    monthlyDebtTarget: 11000,
     debtTargets: {}, // { accountId: 月返済額 } リボ口座ごとの月返済目標
   },
 };
@@ -2979,9 +2979,9 @@ document.getElementById('btnDownloadSetup').addEventListener('click', () => {
     monthlyIncomes: {},
     events: [{id:'e1',name:'冠婚葬祭備え',amount:150000,date:'2027-03-31',saved:0}],
     config: {
-      monthlyDebtTarget: 8000,
+      monthlyDebtTarget: 11000,
       debtTargets: {
-        'cc-rakuten-ribo':  0,     // 楽天リボは月返済額不明 → 設定タブで確認後入力
+        'cc-rakuten-ribo':  3000,
         'cc-paypay-ribo':  5000,
         'cc-paypay2-ribo': 3000
       }
