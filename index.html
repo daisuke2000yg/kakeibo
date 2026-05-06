@@ -9,6 +9,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <style>
   :root {
     --ink: #1a1d1f;
@@ -63,6 +66,114 @@
     position: relative;
     z-index: 2;
   }
+
+  /* ── LOGIN OVERLAY ─────────────────── */
+  #loginOverlay {
+    position: fixed;
+    inset: 0;
+    background: var(--paper);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  #loginOverlay.hidden { display: none; }
+  .login-box {
+    width: 100%;
+    max-width: 360px;
+    border: 1.5px solid var(--ink);
+    padding: 32px 28px;
+    background: var(--paper-lite);
+  }
+  .login-title {
+    font-family: 'Shippori Mincho', serif;
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .login-subtitle {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    color: var(--gray);
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+  .login-field {
+    margin-bottom: 14px;
+  }
+  .login-field label {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    color: var(--gray);
+    margin-bottom: 5px;
+    text-transform: uppercase;
+  }
+  .login-field input {
+    width: 100%;
+    border: 1px solid var(--ink);
+    background: var(--paper);
+    padding: 10px 12px;
+    font-size: 15px;
+    font-family: 'Noto Sans JP', sans-serif;
+    color: var(--ink);
+    outline: none;
+  }
+  .login-field input:focus { border-color: var(--accent); }
+  .login-btn {
+    width: 100%;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    padding: 12px;
+    font-size: 14px;
+    font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer;
+    margin-top: 6px;
+    letter-spacing: 0.05em;
+  }
+  .login-btn:hover { background: var(--accent); }
+  .login-toggle {
+    text-align: center;
+    margin-top: 16px;
+    font-size: 12px;
+    color: var(--gray);
+  }
+  .login-toggle a {
+    color: var(--accent);
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  .login-error {
+    color: var(--accent);
+    font-size: 12px;
+    margin-top: 10px;
+    min-height: 18px;
+  }
+
+  /* ── SYNC STATUS ────────────────────── */
+  .sync-status {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    color: var(--gray);
+    margin-top: 4px;
+  }
+  .sync-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--gray-soft);
+    flex-shrink: 0;
+  }
+  .sync-dot.synced { background: var(--green); }
+  .sync-dot.saving { background: var(--gold); }
+  .sync-dot.error  { background: var(--accent); }
 
   /* ── HEADER ─────────────────────────── */
   header {
@@ -1022,11 +1133,44 @@
 </head>
 <body>
 
+<!-- ログインオーバーレイ -->
+<div id="loginOverlay">
+  <div class="login-box">
+    <div class="login-title">家計簿</div>
+    <div class="login-subtitle">Sign in to sync your data</div>
+    <div class="login-field">
+      <label>メールアドレス</label>
+      <input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email">
+    </div>
+    <div class="login-field">
+      <label>パスワード</label>
+      <input type="password" id="loginPassword" placeholder="6文字以上" autocomplete="current-password">
+    </div>
+    <div id="loginError" class="login-error"></div>
+    <button class="login-btn" id="loginSubmit">ログイン</button>
+    <div class="login-toggle">
+      アカウントがない場合は <a id="loginToggleLink">新規登録</a>
+    </div>
+  </div>
+</div>
+
 <div class="container">
 
-  <header>
-    <div class="brand">家計簿</div>
-    <div class="brand-sub">Personal Balance · Sound Mind</div>
+  <header style="display:flex;justify-content:space-between;align-items:flex-end;">
+    <div>
+      <div class="brand">家計簿</div>
+      <div class="brand-sub">Personal Balance · Sound Mind</div>
+    </div>
+    <div style="text-align:right;">
+      <div class="sync-status">
+        <div class="sync-dot" id="syncDot"></div>
+        <span id="syncText">--</span>
+      </div>
+      <div style="font-size:10px;color:var(--gray);margin-top:3px;">
+        <span id="headerUserEmail" style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:0.05em;"></span>
+        <a id="btnLogout" style="color:var(--accent);cursor:pointer;font-size:10px;margin-left:6px;display:none;">ログアウト</a>
+      </div>
+    </div>
   </header>
 
   <!-- ════════════════════════════════ -->
@@ -1428,6 +1572,175 @@
 
 <script>
 // ═══════════════════════════════════════════════════════════════
+// Firebase 初期化
+// ═══════════════════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyDbuC1keusjlI5ss45uBKjfIyQrXWWOLpc",
+  authDomain: "kakeibo-19cb9.firebaseapp.com",
+  projectId: "kakeibo-19cb9",
+  storageBucket: "kakeibo-19cb9.firebasestorage.app",
+  messagingSenderId: "186210839844",
+  appId: "1:186210839844:web:cf6db7e78bb436d01bd7b1",
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+let currentUser = null;
+let cloudUnsubscribe = null;
+let isSyncing = false; // 自分の書き込みによるスナップショットを無視するフラグ
+
+// ── 同期ステータス表示 ──────────────────
+function setSyncStatus(state) {
+  const dot  = document.getElementById('syncDot');
+  const text = document.getElementById('syncText');
+  dot.className = 'sync-dot';
+  if (state === 'synced') { dot.classList.add('synced'); text.textContent = 'SYNCED'; }
+  else if (state === 'saving') { dot.classList.add('saving'); text.textContent = 'SAVING...'; }
+  else if (state === 'error')  { dot.classList.add('error');  text.textContent = 'SYNC ERR'; }
+  else { text.textContent = 'OFFLINE'; }
+}
+
+// ── Firestore への書き込み ──────────────
+function saveToCloud() {
+  if (!currentUser) return;
+  setSyncStatus('saving');
+  isSyncing = true;
+  db.collection('users').doc(currentUser.uid).set({ data: DATA })
+    .then(() => { setSyncStatus('synced'); })
+    .catch(() => { setSyncStatus('error'); })
+    .finally(() => { setTimeout(() => { isSyncing = false; }, 1500); });
+}
+
+// ── Firestore からのリアルタイム受信 ─────
+function setupRealtimeSync() {
+  if (cloudUnsubscribe) cloudUnsubscribe();
+  cloudUnsubscribe = db.collection('users').doc(currentUser.uid)
+    .onSnapshot(snap => {
+      if (isSyncing) return; // 自分の書き込みのエコーは無視
+      if (!snap.exists) return;
+      const cloudData = snap.data()?.data;
+      if (!cloudData) return;
+      DATA = mergeCloudData(cloudData);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA));
+      renderAll();
+      setSyncStatus('synced');
+    }, () => { setSyncStatus('error'); });
+}
+
+// クラウドデータをローカルの DEFAULT_DATA 構造に安全にマージ
+function mergeCloudData(cloud) {
+  return {
+    accounts:      cloud.accounts      || DEFAULT_DATA.accounts,
+    transactions:  cloud.transactions  || [],
+    categories:    cloud.categories    || DEFAULT_CATEGORIES,
+    budgets:       cloud.budgets       || DEFAULT_DATA.budgets,
+    fixedExpenses: cloud.fixedExpenses || DEFAULT_DATA.fixedExpenses,
+    monthlyIncomes: cloud.monthlyIncomes || {},
+    events:        cloud.events        || [],
+    config:        cloud.config        || DEFAULT_DATA.config,
+  };
+}
+
+// ── Firestore からの初回読み込み ─────────
+async function loadFromCloud() {
+  const snap = await db.collection('users').doc(currentUser.uid).get();
+  if (snap.exists && snap.data()?.data) {
+    DATA = mergeCloudData(snap.data().data);
+  } else {
+    // クラウド初回 → ローカルデータがあれば移行、なければデフォルト
+    const local = localStorage.getItem(STORAGE_KEY);
+    DATA = local ? mergeCloudData(JSON.parse(local)) : loadData();
+    // 初回書き込み
+    await db.collection('users').doc(currentUser.uid).set({ data: DATA });
+  }
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA));
+}
+
+// ── ログイン画面の表示/非表示 ───────────
+let loginMode = 'login'; // 'login' | 'register'
+function showLoginOverlay() {
+  document.getElementById('loginOverlay').classList.remove('hidden');
+}
+function hideLoginOverlay() {
+  document.getElementById('loginOverlay').classList.add('hidden');
+}
+
+// ログイン/新規登録ボタン
+document.getElementById('loginSubmit').addEventListener('click', async () => {
+  const email    = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const errEl    = document.getElementById('loginError');
+  errEl.textContent = '';
+  if (!email || !password) { errEl.textContent = 'メールとパスワードを入力してください'; return; }
+  try {
+    if (loginMode === 'login') {
+      await auth.signInWithEmailAndPassword(email, password);
+    } else {
+      await auth.createUserWithEmailAndPassword(email, password);
+    }
+  } catch(e) {
+    const msgs = {
+      'auth/user-not-found':   'メールアドレスが見つかりません',
+      'auth/wrong-password':   'パスワードが違います',
+      'auth/email-already-in-use': 'このメールアドレスは登録済みです',
+      'auth/weak-password':    'パスワードは6文字以上にしてください',
+      'auth/invalid-email':    'メールアドレスの形式が正しくありません',
+      'auth/invalid-credential': 'メールアドレスまたはパスワードが違います',
+    };
+    errEl.textContent = msgs[e.code] || e.message;
+  }
+});
+
+// Enter キーでもログイン
+['loginEmail','loginPassword'].forEach(id => {
+  document.getElementById(id).addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('loginSubmit').click();
+  });
+});
+
+// 登録/ログイン 切り替え
+document.getElementById('loginToggleLink').addEventListener('click', () => {
+  loginMode = loginMode === 'login' ? 'register' : 'login';
+  const isReg = loginMode === 'register';
+  document.getElementById('loginSubmit').textContent   = isReg ? '新規登録' : 'ログイン';
+  document.getElementById('loginToggleLink').textContent = isReg ? 'ログイン画面へ' : '新規登録';
+  document.querySelector('.login-toggle').firstChild.textContent =
+    isReg ? 'すでにアカウントがある場合は ' : 'アカウントがない場合は ';
+  document.getElementById('loginError').textContent = '';
+});
+
+// ログアウト
+document.getElementById('btnLogout').addEventListener('click', () => {
+  if (!confirm('ログアウトしますか?')) return;
+  if (cloudUnsubscribe) { cloudUnsubscribe(); cloudUnsubscribe = null; }
+  auth.signOut();
+});
+
+// ── 認証状態の監視 ───────────────────────
+auth.onAuthStateChanged(async user => {
+  if (user) {
+    currentUser = user;
+    document.getElementById('headerUserEmail').textContent = user.email;
+    document.getElementById('btnLogout').style.display = 'inline';
+    setSyncStatus('saving');
+    await loadFromCloud();
+    document.getElementById('txDate').value = todayStr();
+    renderAll();
+    setupRealtimeSync();
+    hideLoginOverlay();
+    setSyncStatus('synced');
+  } else {
+    currentUser = null;
+    if (cloudUnsubscribe) { cloudUnsubscribe(); cloudUnsubscribe = null; }
+    document.getElementById('headerUserEmail').textContent = '';
+    document.getElementById('btnLogout').style.display = 'none';
+    setSyncStatus('offline');
+    showLoginOverlay();
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
 // データ層
 // ═══════════════════════════════════════════════════════════════
 const STORAGE_KEY = 'kakeibo_v2';
@@ -1530,6 +1843,7 @@ function loadData() {
 
 function saveData() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA));
+  saveToCloud();
 }
 
 function uid() { return Math.random().toString(36).slice(2, 10); }
@@ -2559,19 +2873,20 @@ document.getElementById('importJSON').addEventListener('change', (e) => {
 });
 
 // 全削除
-document.getElementById('btnClearAll').addEventListener('click', () => {
+document.getElementById('btnClearAll').addEventListener('click', async () => {
   if (!confirm('本当にすべて削除しますか?')) return;
   if (!confirm('もう一度確認:本当に削除しますか?')) return;
   localStorage.removeItem(STORAGE_KEY);
   DATA = loadData(); // 初期セットアップ再実行
-  saveData();
+  // Firestore も上書き(空のデフォルトデータで)
+  if (currentUser) {
+    await db.collection('users').doc(currentUser.uid).set({ data: DATA });
+  }
   renderAll();
   alert('削除しました');
 });
 
-// 初期化
-document.getElementById('txDate').value = todayStr();
-renderAll();
+// 初期化は auth.onAuthStateChanged() の中で行う（Firebase ログイン後に loadFromCloud() 経由でデータを上書き）
 </script>
 
 </body>
