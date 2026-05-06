@@ -1410,6 +1410,19 @@
   <section class="panel" id="panel-settings">
     <h2 class="section-title">設定 <span class="section-title-en">Configuration</span></h2>
 
+    <!-- 初回セットアップ -->
+    <div class="settings-section" style="border:2px solid var(--gold);padding:18px;">
+      <h3 style="color:var(--gold);">▶ 初回セットアップ</h3>
+      <p class="setting-desc">口座・残高・予算があらかじめ入ったデータをダウンロードして、すぐ下の「JSONを取り込み」で読み込んでください。</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+        <button class="ghost-btn" id="btnDownloadSetup" style="border-color:var(--gold);color:var(--gold);">① 初期データをダウンロード</button>
+        <label class="ghost-btn" style="cursor:pointer;border-color:var(--gold);color:var(--gold);">
+          ② JSONを取り込み(復元)
+          <input type="file" id="importJSONSetup" accept=".json" style="display:none;">
+        </label>
+      </div>
+    </div>
+
     <!-- 月収入の予測 -->
     <div class="settings-section">
       <h3>月別の収入予測</h3>
@@ -2921,7 +2934,7 @@ document.getElementById('btnDownloadSetup').addEventListener('click', () => {
 });
 
 // JSON取り込み
-document.getElementById('importJSON').addEventListener('change', (e) => {
+function handleJSONImport(e) {
   const file = e.target.files[0];
   if (!file) return;
   const reader = new FileReader();
@@ -2939,7 +2952,9 @@ document.getElementById('importJSON').addEventListener('change', (e) => {
     }
   };
   reader.readAsText(file);
-});
+}
+document.getElementById('importJSONSetup').addEventListener('change', handleJSONImport);
+document.getElementById('importJSON').addEventListener('change', handleJSONImport);
 
 // 全削除
 document.getElementById('btnClearAll').addEventListener('click', async () => {
