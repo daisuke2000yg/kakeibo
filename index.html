@@ -1823,7 +1823,8 @@ const DEFAULT_DATA = {
   },
   // 設定
   config: {
-    monthlyDebtTarget: 156000,
+    monthlyDebtTarget: 8000,
+    debtTargets: {}, // { accountId: 月返済額 } リボ口座ごとの月返済目標
   },
 };
 
@@ -2040,11 +2041,16 @@ function renderHome() {
   document.getElementById('miniDebt').innerHTML =
     `<span class="yen">¥</span>${fmtNum(totals.liab)}`;
 
-  // リボ完済予測
-  const target = DATA.config.monthlyDebtTarget || 100000;
-  const monthsLeft = totals.liab > 0 ? Math.ceil(totals.liab / target) : 0;
+  // リボ完済予測（リボ口座の合計で計算）
+  const riboAccts = DATA.accounts.filter(a => a.type === 'credit' && a.ribo);
+  const riboTotal = riboAccts.reduce((s, a) => s + Math.max(0, getAccountBalance(a.id)), 0);
+  const debtTargets = DATA.config.debtTargets || {};
+  const riboMonthly = Object.values(debtTargets).reduce((s, v) => s + Number(v || 0), 0);
+  const riboMonths = (riboTotal > 0 && riboMonthly > 0) ? Math.ceil(riboTotal / riboMonthly) : 0;
   document.getElementById('miniDebtSub').textContent =
-    totals.liab > 0 ? `月${fmtYen(target)}返済で${monthsLeft}ヶ月` : '完済済み 🎉';
+    riboTotal > 0
+      ? (riboMonthly > 0 ? `リボ月${fmtYen(riboMonthly)}返済で${riboMonths}ヶ月` : 'リボ月返済額を設定してください')
+      : '完済済み 🎉';
 
   // 純資産
   const netEl = document.getElementById('miniNet');
@@ -2358,74 +2364,91 @@ function renderDebt() {
     return;
   }
 
-  const target = DATA.config.monthlyDebtTarget || 100000;
-
-  // 全体の残高と進捗
-  let totalCurrent = 0;
-  let totalInitial = 0;
-  for (const a of credAccts) {
-    const cur = Math.max(0, getAccountBalance(a.id));
-    totalCurrent += cur;
-    totalInitial += Math.max(cur, Number(a.opening) || 0);
-  }
-  const repaid = totalInitial - totalCurrent;
-  const progress = totalInitial > 0 ? (repaid / totalInitial) * 100 : 0;
-  const monthsLeft = totalCurrent > 0 ? Math.ceil(totalCurrent / target) : 0;
+  const riboAccts   = credAccts.filter(a => a.ribo);
+  const normalAccts = credAccts.filter(a => !a.ribo);
+  const debtTargets = DATA.config.debtTargets || {};
 
   let html = '';
 
-  // 全体カード
-  html += `
-    <div class="debt-card ${totalCurrent === 0 ? 'complete' : ''}">
-      <div class="debt-title">
-        <span>${totalCurrent === 0 ? '完済済み 🎉' : 'リボ・分割 残高合計'}</span>
-        <span class="debt-meta">${credAccts.length}枚</span>
-      </div>
-      <div class="debt-amount"><span class="yen">¥</span>${fmtNum(totalCurrent)}</div>
-      <div class="debt-progress-bar">
-        <div class="debt-progress-fill" style="width:${progress}%"></div>
-      </div>
-      <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--gray);margin-top:4px;">
-        進捗 ${Math.round(progress)}% (返済済み ${fmtYen(repaid)} / 初期 ${fmtYen(totalInitial)})
-      </div>
-      <div class="debt-stats">
-        <div class="debt-stat">
-          <div class="debt-stat-lbl">月返済目標</div>
-          <div class="debt-stat-val">${fmtYen(target)}</div>
-        </div>
-        <div class="debt-stat">
-          <div class="debt-stat-lbl">残り月数</div>
-          <div class="debt-stat-val">${monthsLeft}ヶ月</div>
-        </div>
-        <div class="debt-stat">
-          <div class="debt-stat-lbl">完済予定</div>
-          <div class="debt-stat-val">${monthsLeft > 0 ? getCompletionMonth(monthsLeft) : '—'}</div>
-        </div>
-      </div>
-    </div>
-  `;
+  // ── リボ残高セクション ──────────────────
+  if (riboAccts.length > 0) {
+    let riboTotal = 0, riboInitial = 0, riboMonthly = 0;
+    for (const a of riboAccts) {
+      const cur = Math.max(0, getAccountBalance(a.id));
+      riboTotal   += cur;
+      riboInitial += Math.max(cur, Number(a.opening) || 0);
+      riboMonthly += Number(debtTargets[a.id] || 0);
+    }
+    const riboRepaid   = riboInitial - riboTotal;
+    const riboProgress = riboInitial > 0 ? (riboRepaid / riboInitial) * 100 : 0;
+    const riboMonths   = (riboTotal > 0 && riboMonthly > 0) ? Math.ceil(riboTotal / riboMonthly) : 0;
 
-  // カードごと
-  for (const a of credAccts) {
-    const cur = Math.max(0, getAccountBalance(a.id));
-    const init = Math.max(cur, Number(a.opening) || 0);
-    const repaidA = init - cur;
-    const progA = init > 0 ? (repaidA / init) * 100 : 0;
     html += `
-      <div class="debt-card ${cur === 0 ? 'complete' : ''}" style="margin-top:10px;">
+      <div class="debt-card ${riboTotal === 0 ? 'complete' : ''}">
         <div class="debt-title">
-          <span style="font-size:14px;">${escapeHtml(a.name)}</span>
+          <span>${riboTotal === 0 ? 'リボ 完済済み 🎉' : 'リボ 残高合計'}</span>
+          <span class="debt-meta">${riboAccts.length}口座</span>
         </div>
-        <div class="debt-amount" style="font-size:22px;"><span class="yen">¥</span>${fmtNum(cur)}</div>
-        <div class="debt-progress-bar"><div class="debt-progress-fill" style="width:${progA}%"></div></div>
-        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--gray);margin-top:4px;">
-          ${Math.round(progA)}% · ${fmtYen(repaidA)} / ${fmtYen(init)} 返済済み
+        <div class="debt-amount"><span class="yen">¥</span>${fmtNum(riboTotal)}</div>
+        <div class="debt-progress-bar"><div class="debt-progress-fill" style="width:${riboProgress}%"></div></div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--gray);margin-top:4px;">
+          進捗 ${Math.round(riboProgress)}% · 返済済み ${fmtYen(riboRepaid)} / 初期 ${fmtYen(riboInitial)}
         </div>
-      </div>
-    `;
+        <div class="debt-stats">
+          <div class="debt-stat"><div class="debt-stat-lbl">合計月返済</div><div class="debt-stat-val">${riboMonthly > 0 ? fmtYen(riboMonthly) : '未設定'}</div></div>
+          <div class="debt-stat"><div class="debt-stat-lbl">残り月数</div><div class="debt-stat-val">${riboMonths > 0 ? riboMonths + 'ヶ月' : '—'}</div></div>
+          <div class="debt-stat"><div class="debt-stat-lbl">完済予定</div><div class="debt-stat-val">${riboMonths > 0 ? getCompletionMonth(riboMonths) : '—'}</div></div>
+        </div>
+      </div>`;
+
+    // リボ口座ごとの内訳
+    for (const a of riboAccts) {
+      const cur     = Math.max(0, getAccountBalance(a.id));
+      const init    = Math.max(cur, Number(a.opening) || 0);
+      const rep     = init - cur;
+      const prog    = init > 0 ? (rep / init) * 100 : 0;
+      const monthly = Number(debtTargets[a.id] || 0);
+      const months  = (cur > 0 && monthly > 0) ? Math.ceil(cur / monthly) : 0;
+      html += `
+        <div class="debt-card ${cur === 0 ? 'complete' : ''}" style="margin-top:8px;">
+          <div class="debt-title"><span style="font-size:13px;">${escapeHtml(a.name)}</span></div>
+          <div class="debt-amount" style="font-size:20px;"><span class="yen">¥</span>${fmtNum(cur)}</div>
+          <div class="debt-progress-bar"><div class="debt-progress-fill" style="width:${prog}%"></div></div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--gray);margin-top:3px;">
+            ${Math.round(prog)}% · ${fmtYen(rep)} / ${fmtYen(init)} 返済済み
+          </div>
+          <div class="debt-stats" style="margin-top:6px;">
+            <div class="debt-stat"><div class="debt-stat-lbl">月返済</div><div class="debt-stat-val">${monthly > 0 ? fmtYen(monthly) : '未設定'}</div></div>
+            <div class="debt-stat"><div class="debt-stat-lbl">残り</div><div class="debt-stat-val">${months > 0 ? months + 'ヶ月' : '—'}</div></div>
+            <div class="debt-stat"><div class="debt-stat-lbl">完済予定</div><div class="debt-stat-val">${months > 0 ? getCompletionMonth(months) : '—'}</div></div>
+          </div>
+        </div>`;
+    }
   }
 
-  debtList.innerHTML = html;
+  // ── 今月の請求（一括払い）セクション ───
+  if (normalAccts.length > 0) {
+    const normalTotal = normalAccts.reduce((s, a) => s + Math.max(0, getAccountBalance(a.id)), 0);
+    html += `
+      <div class="debt-card" style="margin-top:14px;border-style:dashed;">
+        <div class="debt-title">
+          <span>今月の請求（引き落とし待ち）</span>
+          <span class="debt-meta">${normalAccts.length}枚</span>
+        </div>
+        <div class="debt-amount" style="font-size:22px;"><span class="yen">¥</span>${fmtNum(normalTotal)}</div>
+        <div style="font-size:11px;color:var(--gray);margin-top:4px;">引き落とし日にカード支払で記録すると残高が更新されます</div>
+      </div>`;
+    for (const a of normalAccts) {
+      const cur = Math.max(0, getAccountBalance(a.id));
+      html += `
+        <div style="display:flex;justify-content:space-between;padding:8px 4px;border-bottom:1px solid var(--paper-deep);font-size:13px;">
+          <span>${escapeHtml(a.name)}</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-weight:700;">${fmtYen(cur)}</span>
+        </div>`;
+    }
+  }
+
+  debtList.innerHTML = html || `<div class="help-card">クレジットカードが登録されていません。</div>`;
 }
 
 function getCompletionMonth(monthsAhead) {
@@ -2650,20 +2673,41 @@ function renderSettings() {
   // クレジットカード残高
   const debtInit = document.getElementById('debtInitGrid');
   const credAccts = DATA.accounts.filter(a => a.type === 'credit');
+  const riboAcctsS  = credAccts.filter(a => a.ribo);
+  const normalAcctsS = credAccts.filter(a => !a.ribo);
+  const debtTargets = DATA.config.debtTargets || {};
   if (credAccts.length === 0) {
     debtInit.innerHTML = `<div class="help-card">先に口座タブからクレジットカードを追加してください。</div>`;
   } else {
-    debtInit.innerHTML = credAccts.map(a => `
-      <div class="field" style="margin-bottom:8px;">
-        <label>${escapeHtml(a.name)}(円)</label>
-        <input type="number" data-acct-init="${a.id}" value="${Number(a.opening||0)}" step="100" inputmode="numeric" style="font-size:14px;padding:8px;">
-      </div>
-    `).join('') + `
-      <div class="field" style="margin-bottom:8px;margin-top:12px;">
-        <label>月の返済額目標(円)</label>
-        <input type="number" id="debtTargetInput" value="${DATA.config.monthlyDebtTarget||100000}" step="1000" inputmode="numeric" style="font-size:14px;padding:8px;">
-      </div>
-    `;
+    let debtHtml = '';
+    if (riboAcctsS.length > 0) {
+      debtHtml += `<div style="font-size:11px;color:var(--gray);letter-spacing:.05em;margin-bottom:6px;">── リボ残高</div>`;
+      debtHtml += riboAcctsS.map(a => `
+        <div style="margin-bottom:10px;">
+          <div style="font-size:12px;color:var(--gray);margin-bottom:4px;">${escapeHtml(a.name)}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <div class="field" style="margin-bottom:0;">
+              <label>現在残高(円)</label>
+              <input type="number" data-acct-init="${a.id}" value="${Number(a.opening||0)}" step="100" inputmode="numeric" style="font-size:14px;padding:8px;">
+            </div>
+            <div class="field" style="margin-bottom:0;">
+              <label>月返済額(円)</label>
+              <input type="number" data-debt-target="${a.id}" value="${Number(debtTargets[a.id]||0)}" step="500" inputmode="numeric" style="font-size:14px;padding:8px;">
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+    if (normalAcctsS.length > 0) {
+      debtHtml += `<div style="font-size:11px;color:var(--gray);letter-spacing:.05em;margin:10px 0 6px;">── 今月の請求（一括払い）</div>`;
+      debtHtml += normalAcctsS.map(a => `
+        <div class="field" style="margin-bottom:8px;">
+          <label>${escapeHtml(a.name)}(円)</label>
+          <input type="number" data-acct-init="${a.id}" value="${Number(a.opening||0)}" step="100" inputmode="numeric" style="font-size:14px;padding:8px;">
+        </div>
+      `).join('');
+    }
+    debtInit.innerHTML = debtHtml;
   }
 
   // カテゴリ
@@ -2858,8 +2902,12 @@ document.getElementById('btnSaveDebtInit').addEventListener('click', () => {
     const a = DATA.accounts.find(x => x.id === inp.dataset.acctInit);
     if (a) a.opening = Number(inp.value) || 0;
   });
-  const t = document.getElementById('debtTargetInput');
-  if (t) DATA.config.monthlyDebtTarget = Number(t.value) || 100000;
+  if (!DATA.config.debtTargets) DATA.config.debtTargets = {};
+  document.querySelectorAll('[data-debt-target]').forEach(inp => {
+    DATA.config.debtTargets[inp.dataset.debtTarget] = Number(inp.value) || 0;
+  });
+  // monthlyDebtTargetをdebtTargetsの合計で自動更新
+  DATA.config.monthlyDebtTarget = Object.values(DATA.config.debtTargets).reduce((s, v) => s + Number(v||0), 0);
   saveData();
   alert('保存しました');
   renderAll();
@@ -2907,15 +2955,22 @@ document.getElementById('btnExportJSON').addEventListener('click', () => {
 document.getElementById('btnDownloadSetup').addEventListener('click', () => {
   const setupData = {
     accounts: [
-      {id:'cash1',    type:'cash',   name:'財布',              opening:2350},
-      {id:'bank1',    type:'bank',   name:'三菱UFJ',           opening:47473},
-      {id:'bank2',    type:'bank',   name:'ゆうちょ銀行',      opening:12859},
-      {id:'bank3',    type:'bank',   name:'イオン銀行',        opening:13700},
-      {id:'cc-rakuten',type:'credit',name:'楽天カード',        opening:292955},
-      {id:'cc-paypay', type:'credit',name:'PayPayカード(メイン)',opening:579323},
-      {id:'cc-paypay2',type:'credit',name:'PayPay会社用',      opening:368389},
-      {id:'cc-ion',   type:'credit', name:'イオンクレカ',      opening:6053},
-      {id:'invest1',  type:'invest', name:'NISA/iDeCo',        opening:0}
+      // 現金・銀行
+      {id:'cash1',         type:'cash',   name:'財布',                    opening:2350},
+      {id:'bank1',         type:'bank',   name:'三菱UFJ',                 opening:47473},
+      {id:'bank2',         type:'bank',   name:'ゆうちょ銀行',            opening:12859},
+      {id:'bank3',         type:'bank',   name:'イオン銀行',              opening:13700},
+      // リボ（分割返済中）
+      {id:'cc-rakuten-ribo', type:'credit', name:'楽天リボ',              opening:164174, ribo:true},
+      {id:'cc-paypay-ribo',  type:'credit', name:'PayPayリボ(メイン)',    opening:538155, ribo:true},
+      {id:'cc-paypay2-ribo', type:'credit', name:'PayPayリボ(会社)',      opening:368114, ribo:true},
+      // 今月の請求（引き落とし待ち）
+      {id:'cc-rakuten',    type:'credit', name:'楽天カード 今月分(5/27)', opening:128781},
+      {id:'cc-paypay',     type:'credit', name:'PayPay 今月分(5/27)',     opening:41168},
+      {id:'cc-paypay2',    type:'credit', name:'PayPay会社 今月分(5/27)',opening:275},
+      {id:'cc-ion',        type:'credit', name:'イオンクレカ(5/7)',       opening:6053},
+      // 投資
+      {id:'invest1',       type:'invest', name:'NISA/iDeCo',              opening:0}
     ],
     transactions: [],
     categories: ['食費','日用品','交通費','光熱費','通信費','医療・健康','娯楽','交際費','衣服・美容','保険','サブスク','奨学金','仕事関連','その他'],
@@ -2923,7 +2978,14 @@ document.getElementById('btnDownloadSetup').addEventListener('click', () => {
     fixedExpenses: {光熱費:7500,通信費:6000,保険:8000,奨学金:33936,サブスク:2400},
     monthlyIncomes: {},
     events: [{id:'e1',name:'冠婚葬祭備え',amount:150000,date:'2027-03-31',saved:0}],
-    config: {monthlyDebtTarget:156000}
+    config: {
+      monthlyDebtTarget: 8000,
+      debtTargets: {
+        'cc-rakuten-ribo':  0,     // 楽天リボは月返済額不明 → 設定タブで確認後入力
+        'cc-paypay-ribo':  5000,
+        'cc-paypay2-ribo': 3000
+      }
+    }
   };
   const blob = new Blob([JSON.stringify(setupData, null, 2)], {type:'application/json'});
   const url = URL.createObjectURL(blob);
