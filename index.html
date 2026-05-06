@@ -9,6 +9,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <style>
   :root {
     --ink: #1a1d1f;
@@ -63,6 +66,114 @@
     position: relative;
     z-index: 2;
   }
+
+  /* ── LOGIN OVERLAY ─────────────────── */
+  #loginOverlay {
+    position: fixed;
+    inset: 0;
+    background: var(--paper);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  #loginOverlay.hidden { display: none; }
+  .login-box {
+    width: 100%;
+    max-width: 360px;
+    border: 1.5px solid var(--ink);
+    padding: 32px 28px;
+    background: var(--paper-lite);
+  }
+  .login-title {
+    font-family: 'Shippori Mincho', serif;
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .login-subtitle {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    color: var(--gray);
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+  .login-field {
+    margin-bottom: 14px;
+  }
+  .login-field label {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    color: var(--gray);
+    margin-bottom: 5px;
+    text-transform: uppercase;
+  }
+  .login-field input {
+    width: 100%;
+    border: 1px solid var(--ink);
+    background: var(--paper);
+    padding: 10px 12px;
+    font-size: 15px;
+    font-family: 'Noto Sans JP', sans-serif;
+    color: var(--ink);
+    outline: none;
+  }
+  .login-field input:focus { border-color: var(--accent); }
+  .login-btn {
+    width: 100%;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    padding: 12px;
+    font-size: 14px;
+    font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer;
+    margin-top: 6px;
+    letter-spacing: 0.05em;
+  }
+  .login-btn:hover { background: var(--accent); }
+  .login-toggle {
+    text-align: center;
+    margin-top: 16px;
+    font-size: 12px;
+    color: var(--gray);
+  }
+  .login-toggle a {
+    color: var(--accent);
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  .login-error {
+    color: var(--accent);
+    font-size: 12px;
+    margin-top: 10px;
+    min-height: 18px;
+  }
+
+  /* ── SYNC STATUS ────────────────────── */
+  .sync-status {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    color: var(--gray);
+    margin-top: 4px;
+  }
+  .sync-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--gray-soft);
+    flex-shrink: 0;
+  }
+  .sync-dot.synced { background: var(--green); }
+  .sync-dot.saving { background: var(--gold); }
+  .sync-dot.error  { background: var(--accent); }
 
   /* ── HEADER ─────────────────────────── */
   header {
@@ -400,14 +511,30 @@
     background: var(--paper);
     border: 1px solid var(--gray-soft);
     overflow: hidden;
+    display: flex;
   }
   .budget-bar-fill {
     height: 100%;
     background: var(--green);
     transition: width 0.4s ease;
+    flex-shrink: 0;
   }
   .budget-bar-fill.warn { background: var(--warn); }
   .budget-bar-fill.over { background: var(--accent); }
+  .budget-bar-reserved {
+    height: 100%;
+    flex-shrink: 0;
+    background: repeating-linear-gradient(
+      45deg,
+      var(--gold) 0px,
+      var(--gold) 2px,
+      transparent 2px,
+      transparent 6px
+    );
+    opacity: 0.8;
+    transition: width 0.4s ease;
+  }
+  .budget-row-amt .reserved { color: var(--gold); font-size: 10px; }
 
   /* ── RECORD FORM ────────────────────── */
   .form-card {
@@ -1056,11 +1183,44 @@
 </head>
 <body>
 
+<!-- ログインオーバーレイ -->
+<div id="loginOverlay">
+  <div class="login-box">
+    <div class="login-title">家計簿</div>
+    <div class="login-subtitle">Sign in to sync your data</div>
+    <div class="login-field">
+      <label>メールアドレス</label>
+      <input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email">
+    </div>
+    <div class="login-field">
+      <label>パスワード</label>
+      <input type="password" id="loginPassword" placeholder="6文字以上" autocomplete="current-password">
+    </div>
+    <div id="loginError" class="login-error"></div>
+    <button class="login-btn" id="loginSubmit">ログイン</button>
+    <div class="login-toggle">
+      アカウントがない場合は <a id="loginToggleLink">新規登録</a>
+    </div>
+  </div>
+</div>
+
 <div class="container">
 
-  <header>
-    <div class="brand">家計簿</div>
-    <div class="brand-sub">Personal Balance · Sound Mind</div>
+  <header style="display:flex;justify-content:space-between;align-items:flex-end;">
+    <div>
+      <div class="brand">家計簿</div>
+      <div class="brand-sub">Personal Balance · Sound Mind</div>
+    </div>
+    <div style="text-align:right;">
+      <div class="sync-status">
+        <div class="sync-dot" id="syncDot"></div>
+        <span id="syncText">--</span>
+      </div>
+      <div style="font-size:10px;color:var(--gray);margin-top:3px;">
+        <span id="headerUserEmail" style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:0.05em;"></span>
+        <a id="btnLogout" style="color:var(--accent);cursor:pointer;font-size:10px;margin-left:6px;display:none;">ログアウト</a>
+      </div>
+    </div>
   </header>
 
   <!-- ════════════════════════════════ -->
@@ -1311,6 +1471,14 @@
       <button class="ghost-btn" id="btnSaveBudgets" style="margin-top: 12px;">保存</button>
     </div>
 
+    <!-- 固定費の見込み計上 -->
+    <div class="settings-section">
+      <h3>固定費の見込み計上</h3>
+      <p class="setting-desc">毎月ほぼ決まっている支出を先に予算から引いておきます。実際に入力するまでの間も「使用済み」扱いにして、残額を正確に見せます。0にすると無効。</p>
+      <div id="fixedExpensesList"></div>
+      <button class="ghost-btn" id="btnSaveFixedExpenses" style="margin-top: 12px;">保存</button>
+    </div>
+
     <!-- リボ初期残高 -->
     <div class="settings-section">
       <h3>リボ・分割 初期残高</h3>
@@ -1490,6 +1658,175 @@
 
 <script>
 // ═══════════════════════════════════════════════════════════════
+// Firebase 初期化
+// ═══════════════════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyDbuC1keusjlI5ss45uBKjfIyQrXWWOLpc",
+  authDomain: "kakeibo-19cb9.firebaseapp.com",
+  projectId: "kakeibo-19cb9",
+  storageBucket: "kakeibo-19cb9.firebasestorage.app",
+  messagingSenderId: "186210839844",
+  appId: "1:186210839844:web:cf6db7e78bb436d01bd7b1",
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+let currentUser = null;
+let cloudUnsubscribe = null;
+let isSyncing = false; // 自分の書き込みによるスナップショットを無視するフラグ
+
+// ── 同期ステータス表示 ──────────────────
+function setSyncStatus(state) {
+  const dot  = document.getElementById('syncDot');
+  const text = document.getElementById('syncText');
+  dot.className = 'sync-dot';
+  if (state === 'synced') { dot.classList.add('synced'); text.textContent = 'SYNCED'; }
+  else if (state === 'saving') { dot.classList.add('saving'); text.textContent = 'SAVING...'; }
+  else if (state === 'error')  { dot.classList.add('error');  text.textContent = 'SYNC ERR'; }
+  else { text.textContent = 'OFFLINE'; }
+}
+
+// ── Firestore への書き込み ──────────────
+function saveToCloud() {
+  if (!currentUser) return;
+  setSyncStatus('saving');
+  isSyncing = true;
+  db.collection('users').doc(currentUser.uid).set({ data: DATA })
+    .then(() => { setSyncStatus('synced'); })
+    .catch(() => { setSyncStatus('error'); })
+    .finally(() => { setTimeout(() => { isSyncing = false; }, 1500); });
+}
+
+// ── Firestore からのリアルタイム受信 ─────
+function setupRealtimeSync() {
+  if (cloudUnsubscribe) cloudUnsubscribe();
+  cloudUnsubscribe = db.collection('users').doc(currentUser.uid)
+    .onSnapshot(snap => {
+      if (isSyncing) return; // 自分の書き込みのエコーは無視
+      if (!snap.exists) return;
+      const cloudData = snap.data()?.data;
+      if (!cloudData) return;
+      DATA = mergeCloudData(cloudData);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA));
+      renderAll();
+      setSyncStatus('synced');
+    }, () => { setSyncStatus('error'); });
+}
+
+// クラウドデータをローカルの DEFAULT_DATA 構造に安全にマージ
+function mergeCloudData(cloud) {
+  return {
+    accounts:      cloud.accounts      || DEFAULT_DATA.accounts,
+    transactions:  cloud.transactions  || [],
+    categories:    cloud.categories    || DEFAULT_CATEGORIES,
+    budgets:       cloud.budgets       || DEFAULT_DATA.budgets,
+    fixedExpenses: cloud.fixedExpenses || DEFAULT_DATA.fixedExpenses,
+    monthlyIncomes: cloud.monthlyIncomes || {},
+    events:        cloud.events        || [],
+    config:        cloud.config        || DEFAULT_DATA.config,
+  };
+}
+
+// ── Firestore からの初回読み込み ─────────
+async function loadFromCloud() {
+  const snap = await db.collection('users').doc(currentUser.uid).get();
+  if (snap.exists && snap.data()?.data) {
+    DATA = mergeCloudData(snap.data().data);
+  } else {
+    // クラウド初回 → ローカルデータがあれば移行、なければデフォルト
+    const local = localStorage.getItem(STORAGE_KEY);
+    DATA = local ? mergeCloudData(JSON.parse(local)) : loadData();
+    // 初回書き込み
+    await db.collection('users').doc(currentUser.uid).set({ data: DATA });
+  }
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA));
+}
+
+// ── ログイン画面の表示/非表示 ───────────
+let loginMode = 'login'; // 'login' | 'register'
+function showLoginOverlay() {
+  document.getElementById('loginOverlay').classList.remove('hidden');
+}
+function hideLoginOverlay() {
+  document.getElementById('loginOverlay').classList.add('hidden');
+}
+
+// ログイン/新規登録ボタン
+document.getElementById('loginSubmit').addEventListener('click', async () => {
+  const email    = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const errEl    = document.getElementById('loginError');
+  errEl.textContent = '';
+  if (!email || !password) { errEl.textContent = 'メールとパスワードを入力してください'; return; }
+  try {
+    if (loginMode === 'login') {
+      await auth.signInWithEmailAndPassword(email, password);
+    } else {
+      await auth.createUserWithEmailAndPassword(email, password);
+    }
+  } catch(e) {
+    const msgs = {
+      'auth/user-not-found':   'メールアドレスが見つかりません',
+      'auth/wrong-password':   'パスワードが違います',
+      'auth/email-already-in-use': 'このメールアドレスは登録済みです',
+      'auth/weak-password':    'パスワードは6文字以上にしてください',
+      'auth/invalid-email':    'メールアドレスの形式が正しくありません',
+      'auth/invalid-credential': 'メールアドレスまたはパスワードが違います',
+    };
+    errEl.textContent = msgs[e.code] || e.message;
+  }
+});
+
+// Enter キーでもログイン
+['loginEmail','loginPassword'].forEach(id => {
+  document.getElementById(id).addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('loginSubmit').click();
+  });
+});
+
+// 登録/ログイン 切り替え
+document.getElementById('loginToggleLink').addEventListener('click', () => {
+  loginMode = loginMode === 'login' ? 'register' : 'login';
+  const isReg = loginMode === 'register';
+  document.getElementById('loginSubmit').textContent   = isReg ? '新規登録' : 'ログイン';
+  document.getElementById('loginToggleLink').textContent = isReg ? 'ログイン画面へ' : '新規登録';
+  document.querySelector('.login-toggle').firstChild.textContent =
+    isReg ? 'すでにアカウントがある場合は ' : 'アカウントがない場合は ';
+  document.getElementById('loginError').textContent = '';
+});
+
+// ログアウト
+document.getElementById('btnLogout').addEventListener('click', () => {
+  if (!confirm('ログアウトしますか?')) return;
+  if (cloudUnsubscribe) { cloudUnsubscribe(); cloudUnsubscribe = null; }
+  auth.signOut();
+});
+
+// ── 認証状態の監視 ───────────────────────
+auth.onAuthStateChanged(async user => {
+  if (user) {
+    currentUser = user;
+    document.getElementById('headerUserEmail').textContent = user.email;
+    document.getElementById('btnLogout').style.display = 'inline';
+    setSyncStatus('saving');
+    await loadFromCloud();
+    document.getElementById('txDate').value = todayStr();
+    renderAll();
+    setupRealtimeSync();
+    hideLoginOverlay();
+    setSyncStatus('synced');
+  } else {
+    currentUser = null;
+    if (cloudUnsubscribe) { cloudUnsubscribe(); cloudUnsubscribe = null; }
+    document.getElementById('headerUserEmail').textContent = '';
+    document.getElementById('btnLogout').style.display = 'none';
+    setSyncStatus('offline');
+    showLoginOverlay();
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
 // データ層
 // ═══════════════════════════════════════════════════════════════
 const STORAGE_KEY = 'kakeibo_v2';
@@ -1534,6 +1871,14 @@ const DEFAULT_DATA = {
   events: [
     { id: 'e1', name: '冠婚葬祭備え', amount: 150000, date: '2027-03-31', saved: 0 },
   ],
+  // 固定費の月間見込み額(未払いでも予算から先引きされる)
+  fixedExpenses: {
+    '光熱費': 7500,
+    '通信費': 6000,
+    '保険': 8000,
+    '奨学金': 33936,
+    'サブスク': 2400,
+  },
   // 設定
   config: {
     monthlyDebtTarget: 156000,
@@ -1573,6 +1918,7 @@ function loadData() {
       transactions: parsed.transactions || [],
       categories: parsed.categories || DEFAULT_CATEGORIES,
       budgets: parsed.budgets || DEFAULT_DATA.budgets,
+      fixedExpenses: parsed.fixedExpenses || DEFAULT_DATA.fixedExpenses,
       monthlyIncomes: parsed.monthlyIncomes || {},
       events: parsed.events || [],
       config: Object.assign({}, DEFAULT_DATA.config, parsed.config || {}),
@@ -1584,6 +1930,7 @@ function loadData() {
 
 function saveData() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA));
+  saveToCloud();
 }
 
 function uid() { return Math.random().toString(36).slice(2, 10); }
@@ -1716,8 +2063,16 @@ function renderHome() {
 
   // 今月の総予算 = カテゴリ予算の合計
   const totalBudget = Object.values(DATA.budgets).reduce((a,b) => a + Number(b||0), 0);
-  const remaining = totalBudget - ms.expense;
-  const usedPct = totalBudget > 0 ? Math.min(100, (ms.expense / totalBudget) * 100) : 0;
+
+  // 固定費見込み: 実績未満なら0、超えた分だけ追加で引く
+  let fixedReservedTotal = 0;
+  for (const [cat, fixedAmt] of Object.entries(DATA.fixedExpenses || {})) {
+    const actual = ms.catSpent[cat] || 0;
+    fixedReservedTotal += Math.max(0, Number(fixedAmt) - actual);
+  }
+  const effectiveExpense = ms.expense + fixedReservedTotal;
+  const remaining = totalBudget - effectiveExpense;
+  const usedPct = totalBudget > 0 ? Math.min(100, (effectiveExpense / totalBudget) * 100) : 0;
 
   // ヒーロー
   document.getElementById('heroValue').innerHTML =
@@ -1728,8 +2083,11 @@ function renderHome() {
   if (usedPct > 90) progEl.classList.add('danger');
   else if (usedPct > 70) progEl.classList.add('warn');
 
+  const reservedNote = fixedReservedTotal > 0
+    ? ` <span style="color:var(--gold);font-size:11px;">+ 見込み ${fmtYen(fixedReservedTotal)}</span>`
+    : '';
   document.getElementById('heroSub').innerHTML =
-    `予算 <span class="num">${fmtYen(totalBudget)}</span> / 使った <span class="num">${fmtYen(ms.expense)}</span>(${Math.round(usedPct)}%)`;
+    `予算 <span class="num">${fmtYen(totalBudget)}</span> / 使った <span class="num">${fmtYen(ms.expense)}</span>${reservedNote}(${Math.round(usedPct)}%)`;
 
   // 判断ボックス
   renderJudge(remaining, totals);
@@ -1821,15 +2179,18 @@ function renderJudge(monthRemaining, totals) {
 
 function renderBudgetList(catSpent) {
   const el = document.getElementById('budgetList');
-  // 予算が設定されているカテゴリだけ、使った順にソート
+  const fixed = DATA.fixedExpenses || {};
   const rows = [];
   for (const cat of DATA.categories) {
     const budget = Number(DATA.budgets[cat] || 0);
     const spent = Number(catSpent[cat] || 0);
-    if (budget === 0 && spent === 0) continue;
-    rows.push({ cat, budget, spent });
+    const fixedAmt = Number(fixed[cat] || 0);
+    const reserved = Math.max(0, fixedAmt - spent);
+    if (budget === 0 && spent === 0 && reserved === 0) continue;
+    rows.push({ cat, budget, spent, reserved });
   }
-  rows.sort((a, b) => b.spent - a.spent);
+  // 実績＋見込みの合計が多い順にソート
+  rows.sort((a, b) => (b.spent + b.reserved) - (a.spent + a.reserved));
 
   if (rows.length === 0) {
     el.innerHTML = `<div style="padding:20px;text-align:center;color:var(--gray);font-style:italic;font-size:12px;">予算カテゴリを設定しましょう。<br>(設定タブから)</div>`;
@@ -1837,20 +2198,27 @@ function renderBudgetList(catSpent) {
   }
 
   el.innerHTML = rows.map(r => {
-    const pct = r.budget > 0 ? Math.min(100, (r.spent / r.budget) * 100) : 0;
+    const effective = r.spent + r.reserved;
+    const pctSpent = r.budget > 0 ? Math.min(100, (r.spent / r.budget) * 100) : 0;
+    const pctReserved = r.budget > 0 ? Math.min(100 - pctSpent, (r.reserved / r.budget) * 100) : 0;
+    const pctTotal = pctSpent + pctReserved;
     let cls = '';
-    if (pct >= 100) cls = 'over';
-    else if (pct >= 80) cls = 'warn';
+    if (pctTotal >= 100) cls = 'over';
+    else if (pctTotal >= 80) cls = 'warn';
+    const reservedNote = r.reserved > 0
+      ? ` <span class="reserved">+見込み${fmtYen(r.reserved)}</span>`
+      : '';
     return `
       <div class="budget-row">
         <div class="budget-row-top">
           <span class="budget-row-name">${escapeHtml(r.cat)}</span>
           <span class="budget-row-amt">
-            <span class="used">${fmtYen(r.spent)}</span> / ${fmtYen(r.budget)}
+            <span class="used">${fmtYen(r.spent)}</span>${reservedNote} / ${fmtYen(r.budget)}
           </span>
         </div>
         <div class="budget-bar-bg">
-          <div class="budget-bar-fill ${cls}" style="width:${pct}%"></div>
+          <div class="budget-bar-fill ${cls}" style="width:${pctSpent}%"></div>
+          <div class="budget-bar-reserved" style="width:${pctReserved}%"></div>
         </div>
       </div>
     `;
@@ -2316,6 +2684,15 @@ function renderSettings() {
     </div>
   `).join('');
 
+  // 固定費の見込み
+  const fixedEl = document.getElementById('fixedExpensesList');
+  fixedEl.innerHTML = DATA.categories.map(c => `
+    <div class="field" style="margin-bottom:8px;">
+      <label>${escapeHtml(c)}(円/月)</label>
+      <input type="number" data-fixed="${escapeHtml(c)}" value="${Number((DATA.fixedExpenses||{})[c]||0)}" step="100" inputmode="numeric" style="font-size:14px;padding:8px;">
+    </div>
+  `).join('');
+
   // リボ初期残高
   const debtInit = document.getElementById('debtInitGrid');
   const credAccts = DATA.accounts.filter(a => a.type === 'credit');
@@ -2578,6 +2955,16 @@ document.getElementById('btnSaveBudgets').addEventListener('click', () => {
   renderAll();
 });
 
+document.getElementById('btnSaveFixedExpenses').addEventListener('click', () => {
+  if (!DATA.fixedExpenses) DATA.fixedExpenses = {};
+  document.querySelectorAll('[data-fixed]').forEach(inp => {
+    DATA.fixedExpenses[inp.dataset.fixed] = Number(inp.value) || 0;
+  });
+  saveData();
+  alert('保存しました');
+  renderAll();
+});
+
 document.getElementById('btnSaveDebtInit').addEventListener('click', () => {
   document.querySelectorAll('[data-acct-init]').forEach(inp => {
     const a = DATA.accounts.find(x => x.id === inp.dataset.acctInit);
@@ -2650,12 +3037,15 @@ document.getElementById('importJSON').addEventListener('change', (e) => {
 });
 
 // 全削除
-document.getElementById('btnClearAll').addEventListener('click', () => {
+document.getElementById('btnClearAll').addEventListener('click', async () => {
   if (!confirm('本当にすべて削除しますか?')) return;
   if (!confirm('もう一度確認:本当に削除しますか?')) return;
   localStorage.removeItem(STORAGE_KEY);
   DATA = loadData(); // 初期セットアップ再実行
-  saveData();
+  // Firestore も上書き(空のデフォルトデータで)
+  if (currentUser) {
+    await db.collection('users').doc(currentUser.uid).set({ data: DATA });
+  }
   renderAll();
   alert('削除しました');
 });
@@ -2704,9 +3094,7 @@ document.getElementById('btnSaveNoteConfig').addEventListener('click', () => {
   alert('保存しました');
 });
 
-// 初期化
-document.getElementById('txDate').value = todayStr();
-renderAll();
+// 初期化は auth.onAuthStateChanged() の中で行う（Firebase ログイン後に loadFromCloud() 経由でデータを上書き）
 </script>
 
 </body>
