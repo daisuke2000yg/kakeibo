@@ -1471,6 +1471,7 @@
           JSONを取り込み(復元)
           <input type="file" id="importJSON" accept=".json" style="display: none;">
         </label>
+        <button class="ghost-btn" id="btnDownloadSetup">初期データをダウンロード</button>
       </div>
     </div>
 
@@ -2885,6 +2886,36 @@ document.getElementById('btnExportJSON').addEventListener('click', () => {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = `kakeibo_backup_${todayStr()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+// 初期セットアップデータのダウンロード
+document.getElementById('btnDownloadSetup').addEventListener('click', () => {
+  const setupData = {
+    accounts: [
+      {id:'cash1',    type:'cash',   name:'財布',              opening:2350},
+      {id:'bank1',    type:'bank',   name:'三菱UFJ',           opening:47473},
+      {id:'bank2',    type:'bank',   name:'ゆうちょ銀行',      opening:12859},
+      {id:'bank3',    type:'bank',   name:'イオン銀行',        opening:13700},
+      {id:'cc-rakuten',type:'credit',name:'楽天カード',        opening:292955},
+      {id:'cc-paypay', type:'credit',name:'PayPayカード(メイン)',opening:579323},
+      {id:'cc-paypay2',type:'credit',name:'PayPay会社用',      opening:368389},
+      {id:'cc-ion',   type:'credit', name:'イオンクレカ',      opening:6053},
+      {id:'invest1',  type:'invest', name:'NISA/iDeCo',        opening:0}
+    ],
+    transactions: [],
+    categories: ['食費','日用品','交通費','光熱費','通信費','医療・健康','娯楽','交際費','衣服・美容','保険','サブスク','奨学金','仕事関連','その他'],
+    budgets: {食費:30000,日用品:5000,交通費:5000,光熱費:7500,通信費:6000,医療・健康:2000,娯楽:20000,交際費:24000,衣服・美容:5000,保険:8000,サブスク:2400,奨学金:33936,仕事関連:5000,その他:3000},
+    fixedExpenses: {光熱費:7500,通信費:6000,保険:8000,奨学金:33936,サブスク:2400},
+    monthlyIncomes: {},
+    events: [{id:'e1',name:'冠婚葬祭備え',amount:150000,date:'2027-03-31',saved:0}],
+    config: {monthlyDebtTarget:156000}
+  };
+  const blob = new Blob([JSON.stringify(setupData, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'kakeibo_setup.json';
   a.click();
   URL.revokeObjectURL(url);
 });
