@@ -2011,7 +2011,20 @@ function renderHome() {
     const actual = ms.catSpent[cat] || 0;
     fixedReservedTotal += Math.max(0, Number(fixedAmt) - actual);
   }
-  const effectiveExpense = ms.expense + fixedReservedTotal;
+
+  // リボ月返済の見込み: 今月の支払い済み分を差し引いた残り
+  const riboAcctIds = new Set(
+    DATA.accounts.filter(a => a.type === 'credit' && a.ribo).map(a => a.id)
+  );
+  const debtTargetsCalc = DATA.config.debtTargets || {};
+  const riboMonthlyCalc = [...riboAcctIds].reduce((s, id) => s + Number(debtTargetsCalc[id] || 0), 0);
+  const riboActualPayments = DATA.transactions
+    .filter(tx => tx.type === 'payment' && riboAcctIds.has(tx.accountTo))
+    .filter(tx => { const d = new Date(tx.date); return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth(); })
+    .reduce((s, tx) => s + Number(tx.amount), 0);
+  const riboReserved = Math.max(0, riboMonthlyCalc - riboActualPayments);
+
+  const effectiveExpense = ms.expense + fixedReservedTotal + riboReserved;
   const remaining = totalBudget - effectiveExpense;
   const usedPct = totalBudget > 0 ? Math.min(100, (effectiveExpense / totalBudget) * 100) : 0;
 
@@ -2024,8 +2037,11 @@ function renderHome() {
   if (usedPct > 90) progEl.classList.add('danger');
   else if (usedPct > 70) progEl.classList.add('warn');
 
-  const reservedNote = fixedReservedTotal > 0
-    ? ` <span style="color:var(--gold);font-size:11px;">+ 見込み ${fmtYen(fixedReservedTotal)}</span>`
+  const reservedParts = [];
+  if (fixedReservedTotal > 0) reservedParts.push(`固定費 ${fmtYen(fixedReservedTotal)}`);
+  if (riboReserved > 0) reservedParts.push(`リボ返済 ${fmtYen(riboReserved)}`);
+  const reservedNote = reservedParts.length > 0
+    ? ` <span style="color:var(--gold);font-size:11px;">+ 見込み ${reservedParts.join(' / ')}</span>`
     : '';
   document.getElementById('heroSub').innerHTML =
     `予算 <span class="num">${fmtYen(totalBudget)}</span> / 使った <span class="num">${fmtYen(ms.expense)}</span>${reservedNote}(${Math.round(usedPct)}%)`;
@@ -2044,12 +2060,10 @@ function renderHome() {
   // リボ完済予測（リボ口座の合計で計算）
   const riboAccts = DATA.accounts.filter(a => a.type === 'credit' && a.ribo);
   const riboTotal = riboAccts.reduce((s, a) => s + Math.max(0, getAccountBalance(a.id)), 0);
-  const debtTargets = DATA.config.debtTargets || {};
-  const riboMonthly = Object.values(debtTargets).reduce((s, v) => s + Number(v || 0), 0);
-  const riboMonths = (riboTotal > 0 && riboMonthly > 0) ? Math.ceil(riboTotal / riboMonthly) : 0;
+  const riboMonths = (riboTotal > 0 && riboMonthlyCalc > 0) ? Math.ceil(riboTotal / riboMonthlyCalc) : 0;
   document.getElementById('miniDebtSub').textContent =
     riboTotal > 0
-      ? (riboMonthly > 0 ? `リボ月${fmtYen(riboMonthly)}返済で${riboMonths}ヶ月` : 'リボ月返済額を設定してください')
+      ? (riboMonthlyCalc > 0 ? `リボ月${fmtYen(riboMonthlyCalc)}返済で${riboMonths}ヶ月` : 'リボ月返済額を設定してください')
       : '完済済み 🎉';
 
   // 純資産
@@ -2060,7 +2074,7 @@ function renderHome() {
   netEl.classList.toggle('negative', totals.net < 0);
 
   // カテゴリ別予算進捗
-  renderBudgetList(ms.catSpent);
+  renderBudgetList(ms.catSpent, riboMonthlyCalc, riboActualPayments);
 }
 
 function renderJudge(monthRemaining, totals) {
@@ -2123,7 +2137,7 @@ function renderJudge(monthRemaining, totals) {
   `).join('');
 }
 
-function renderBudgetList(catSpent) {
+function renderBudgetList(catSpent, riboMonthlyTotal = 0, riboActualPaid = 0) {
   const el = document.getElementById('budgetList');
   const fixed = DATA.fixedExpenses || {};
   const rows = [];
@@ -2133,10 +2147,16 @@ function renderBudgetList(catSpent) {
     const fixedAmt = Number(fixed[cat] || 0);
     const reserved = Math.max(0, fixedAmt - spent);
     if (budget === 0 && spent === 0 && reserved === 0) continue;
-    rows.push({ cat, budget, spent, reserved });
+    rows.push({ cat, budget, spent, reserved, isRibo: false });
   }
   // 実績＋見込みの合計が多い順にソート
   rows.sort((a, b) => (b.spent + b.reserved) - (a.spent + a.reserved));
+
+  // リボ返済行を先頭に追加
+  if (riboMonthlyTotal > 0) {
+    const riboRes = Math.max(0, riboMonthlyTotal - riboActualPaid);
+    rows.unshift({ cat: 'リボ返済', budget: riboMonthlyTotal, spent: riboActualPaid, reserved: riboRes, isRibo: true });
+  }
 
   if (rows.length === 0) {
     el.innerHTML = `<div style="padding:20px;text-align:center;color:var(--gray);font-style:italic;font-size:12px;">予算カテゴリを設定しましょう。<br>(設定タブから)</div>`;
@@ -2144,20 +2164,21 @@ function renderBudgetList(catSpent) {
   }
 
   el.innerHTML = rows.map(r => {
-    const effective = r.spent + r.reserved;
     const pctSpent = r.budget > 0 ? Math.min(100, (r.spent / r.budget) * 100) : 0;
     const pctReserved = r.budget > 0 ? Math.min(100 - pctSpent, (r.reserved / r.budget) * 100) : 0;
     const pctTotal = pctSpent + pctReserved;
     let cls = '';
     if (pctTotal >= 100) cls = 'over';
     else if (pctTotal >= 80) cls = 'warn';
+    const reservedLabel = r.isRibo ? '未払い' : '見込み';
     const reservedNote = r.reserved > 0
-      ? ` <span class="reserved">+見込み${fmtYen(r.reserved)}</span>`
+      ? ` <span class="reserved">+${reservedLabel}${fmtYen(r.reserved)}</span>`
       : '';
+    const nameStyle = r.isRibo ? ' style="color:var(--gold)"' : '';
     return `
       <div class="budget-row">
         <div class="budget-row-top">
-          <span class="budget-row-name">${escapeHtml(r.cat)}</span>
+          <span class="budget-row-name"${nameStyle}>${escapeHtml(r.cat)}</span>
           <span class="budget-row-amt">
             <span class="used">${fmtYen(r.spent)}</span>${reservedNote} / ${fmtYen(r.budget)}
           </span>
