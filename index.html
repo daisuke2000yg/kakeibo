@@ -536,6 +536,166 @@
   }
   .budget-row-amt .reserved { color: var(--gold); font-size: 10px; }
 
+  /* budget group headers */
+  .budget-group { margin-bottom: 18px; }
+  .budget-group:last-child { margin-bottom: 0; }
+  .budget-group-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--gray);
+    border-bottom: 1px solid var(--gray-soft);
+    padding-bottom: 4px;
+    margin-bottom: 8px;
+  }
+  .budget-group-amt {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 0;
+  }
+
+  /* hero fixed-cost summary line */
+  .hero-fixed {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--gray-soft);
+    font-size: 11px;
+    color: var(--gray);
+  }
+  .hero-fixed .num {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    color: var(--gold);
+  }
+
+  /* payoff simulator */
+  .sim-field-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    margin-bottom: 8px;
+  }
+  .sim-field-row input {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    padding: 4px 6px;
+    border: 1px solid var(--gray-soft);
+    background: var(--paper);
+    color: var(--ink);
+  }
+  .sim-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+    margin-top: 8px;
+  }
+  .sim-table th {
+    text-align: left;
+    font-size: 10px;
+    color: var(--gray);
+    font-weight: 700;
+    padding: 4px 6px;
+    border-bottom: 1px solid var(--gray-soft);
+  }
+  .sim-table td {
+    padding: 7px 6px;
+    border-bottom: 1px solid var(--paper);
+    font-family: 'JetBrains Mono', monospace;
+    vertical-align: top;
+  }
+
+  /* cash shortfall alert */
+  .alert-card {
+    background: var(--paper-deep);
+    border: 2px solid var(--accent);
+    padding: 12px 14px;
+    margin-bottom: 14px;
+  }
+  .alert-card.ok {
+    border: 1px solid var(--gray-soft);
+    padding: 8px 14px;
+  }
+  .alert-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .alert-body {
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  .alert-card.ok .alert-body {
+    font-size: 11px;
+    color: var(--gray);
+  }
+  .alert-body b {
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .alert-detail {
+    font-size: 10px;
+    color: var(--gray);
+    margin-top: 6px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* quick transaction chips */
+  .quick-tx-card {
+    background: var(--paper-deep);
+    border: 1px solid var(--ink);
+    padding: 12px 14px;
+    margin-bottom: 14px;
+  }
+  .quick-tx-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+  .quick-tx-chip {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    padding: 8px 10px;
+    background: var(--paper);
+    border: 1px solid var(--gray-soft);
+    cursor: pointer;
+    text-align: left;
+    position: relative;
+    color: var(--ink);
+    font-family: 'Noto Sans JP', sans-serif;
+  }
+  .quick-tx-chip:active {
+    background: var(--ink);
+    color: var(--paper);
+  }
+  .qt-amt {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 13px;
+  }
+  .qt-memo {
+    font-size: 10px;
+    color: var(--gray);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+  .qt-count {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    font-size: 9px;
+    color: var(--gold);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
   /* ── RECORD FORM ────────────────────── */
   .form-card {
     background: var(--paper-deep);
@@ -618,12 +778,22 @@
     padding: 14px !important;
   }
 
-  /* category quick chips */
+  /* category quick chips (グループ見出し付き) */
   .cat-chips {
+    margin-bottom: 12px;
+  }
+  .chip-group-label {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--gray);
+    margin: 10px 0 5px;
+    font-weight: 700;
+  }
+  .chip-group-label:first-child { margin-top: 0; }
+  .chip-group {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 6px;
-    margin-bottom: 12px;
   }
   .cat-chip {
     padding: 10px 8px;
@@ -1183,16 +1353,20 @@
   <!-- ════════════════════════════════ -->
   <section class="panel active" id="panel-home">
 
-    <!-- ヒーロー:今月あといくら使えるか -->
+    <!-- ヒーロー:今月あといくら自由に使えるか(変動費のみ) -->
     <div class="hero-card">
-      <div class="hero-label">This Month · Available</div>
-      <div class="hero-name">今月あと使える額</div>
+      <div class="hero-label">This Month · Free to Spend</div>
+      <div class="hero-name">今月あと自由に使える額</div>
       <div class="hero-value" id="heroValue"><span class="yen">¥</span>0</div>
       <div class="progress-bar">
         <div class="progress-fill" id="heroProgress" style="width: 0%"></div>
       </div>
-      <div class="hero-sub" id="heroSub">予算 — / 使った —</div>
+      <div class="hero-sub" id="heroSub">変動費予算 — / 使った —</div>
+      <div class="hero-fixed" id="heroFixed"></div>
     </div>
+
+    <!-- 資金ショート警告(不足時のみ表示) -->
+    <div id="cashAlert"></div>
 
     <!-- 判断ボックス:今これ買える? -->
     <div class="judge-card">
@@ -1239,6 +1413,8 @@
   <!-- RECORD / 記録                     -->
   <!-- ════════════════════════════════ -->
   <section class="panel" id="panel-record">
+    <div id="quickTx"></div>
+
     <div class="form-card">
       <div class="form-title">記録する</div>
 
@@ -1336,27 +1512,8 @@
       <strong>「実績」</strong>は実際に記録した取引の合計。<br>
       ズレが大きい月を見つけて、翌月以降の調整に使ってください。
     </div>
-  </section>
 
-  <!-- ════════════════════════════════ -->
-  <!-- DEBT / リボ追跡                   -->
-  <!-- ════════════════════════════════ -->
-  <section class="panel" id="panel-debt">
-    <h2 class="section-title">リボ・分割 完済への道 <span class="section-title-en">Debt Tracker</span></h2>
-    <p class="section-desc">クレカの未払い残高と、完済までの予測。</p>
-
-    <div id="debtList"></div>
-
-    <div class="help-card">
-      <strong>使い方</strong>:設定タブで「リボ初期残高」と「月の返済額目標」を入れてください。記録タブで「カード支払」を選んで返済すると、進捗バーが進みます。
-    </div>
-  </section>
-
-  <!-- ════════════════════════════════ -->
-  <!-- EVENTS / イベント貯金              -->
-  <!-- ════════════════════════════════ -->
-  <section class="panel" id="panel-events">
-    <h2 class="section-title">イベント貯金シミュレーション <span class="section-title-en">Future Events</span></h2>
+    <h2 class="section-title" style="margin-top:24px;">イベント貯金 <span class="section-title-en">Future Events</span></h2>
     <p class="section-desc">これから来る出費に、月いくら積み立てれば間に合うか。</p>
 
     <div class="events-list" id="eventsList"></div>
@@ -1369,10 +1526,36 @@
   </section>
 
   <!-- ════════════════════════════════ -->
-  <!-- HISTORY / 履歴                    -->
+  <!-- DEBT / リボ追跡                   -->
   <!-- ════════════════════════════════ -->
-  <section class="panel" id="panel-history">
-    <h2 class="section-title">取引履歴 <span class="section-title-en">Transactions</span></h2>
+  <section class="panel" id="panel-debt">
+    <h2 class="section-title">リボ・分割 完済への道 <span class="section-title-en">Debt Tracker</span></h2>
+    <p class="section-desc">クレカの未払い残高と、完済までの予測。</p>
+
+    <div id="debtList"></div>
+
+    <h2 class="section-title" style="margin-top:24px;">完済シミュレーター <span class="section-title-en">Payoff Simulator</span></h2>
+    <p class="section-desc">リボ手数料(利息)を含めた本当の完済予測。追加返済の効果が分かります。</p>
+    <div id="debtSim"></div>
+
+    <div class="help-card">
+      <strong>使い方</strong>:設定タブで「リボ初期残高」と「月の返済額目標」を入れてください。記録タブで「カード支払」を選んで返済すると、進捗バーが進みます。
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════ -->
+  <!-- ASSETS / 資産・履歴                -->
+  <!-- ════════════════════════════════ -->
+  <section class="panel" id="panel-accounts">
+    <h2 class="section-title">口座・カード <span class="section-title-en">Accounts</span></h2>
+
+    <div class="accounts-list" id="accountsList"></div>
+
+    <div class="btn-row">
+      <button class="ghost-btn" id="btnAddAccount">+ 口座・カードを追加</button>
+    </div>
+
+    <h2 class="section-title" style="margin-top:24px;">取引履歴 <span class="section-title-en">Transactions</span></h2>
 
     <div class="filter-bar">
       <select id="filterMonth"></select>
@@ -1389,19 +1572,6 @@
     </div>
 
     <div class="tx-cards" id="txCards"></div>
-  </section>
-
-  <!-- ════════════════════════════════ -->
-  <!-- ACCOUNTS / 口座                   -->
-  <!-- ════════════════════════════════ -->
-  <section class="panel" id="panel-accounts">
-    <h2 class="section-title">口座・カード <span class="section-title-en">Accounts</span></h2>
-
-    <div class="accounts-list" id="accountsList"></div>
-
-    <div class="btn-row">
-      <button class="ghost-btn" id="btnAddAccount">+ 口座・カードを追加</button>
-    </div>
   </section>
 
   <!-- ════════════════════════════════ -->
@@ -1515,21 +1685,17 @@
     <span class="icon">+</span>
     <span class="lbl">記録</span>
   </button>
-  <button class="nav-btn" data-panel="annual">
-    <span class="icon">▦</span>
-    <span class="lbl">年間</span>
-  </button>
   <button class="nav-btn" data-panel="debt">
     <span class="icon">▼</span>
-    <span class="lbl">リボ</span>
+    <span class="lbl">完済</span>
   </button>
-  <button class="nav-btn" data-panel="events">
-    <span class="icon">★</span>
-    <span class="lbl">イベント</span>
+  <button class="nav-btn" data-panel="accounts">
+    <span class="icon">◆</span>
+    <span class="lbl">資産</span>
   </button>
-  <button class="nav-btn" data-panel="history">
-    <span class="icon">≡</span>
-    <span class="lbl">履歴</span>
+  <button class="nav-btn" data-panel="annual">
+    <span class="icon">▦</span>
+    <span class="lbl">計画</span>
   </button>
   <button class="nav-btn" data-panel="settings">
     <span class="icon">⚙</span>
@@ -1774,9 +1940,36 @@ auth.onAuthStateChanged(async user => {
 const STORAGE_KEY = 'kakeibo_v2';
 
 const DEFAULT_CATEGORIES = [
-  '食費','日用品','交通費','光熱費','通信費','医療・健康',
-  '娯楽','交際費','衣服・美容','保険','サブスク','奨学金','仕事関連','その他'
+  '食料品・スーパー','外食・弁当','コンビニ・間食','飲み会・食事会',
+  '日用品','交通費','光熱費','通信費','医療・健康',
+  '趣味・レジャー','本・教養','タバコ','衣服・美容','贈り物・お土産',
+  '保険','サブスク','家賃・送金','税金','奨学金','仕事関連','その他'
 ];
+
+// カテゴリの表示グループ(ホームの予算バー・記録チップの束ね方)
+// ここに無いカテゴリ(旧カテゴリや自作カテゴリ)は「その他」グループに入る
+const CATEGORY_GROUPS = [
+  { key: 'food',   name: '食べる',     cats: ['食料品・スーパー','外食・弁当','コンビニ・間食'] },
+  { key: 'social', name: '人付き合い', cats: ['飲み会・食事会','贈り物・お土産'] },
+  { key: 'fun',    name: '自分の楽しみ', cats: ['趣味・レジャー','本・教養','タバコ'] },
+  { key: 'life',   name: '暮らし',     cats: ['日用品','交通費','衣服・美容','医療・健康'] },
+  { key: 'fixed',  name: '固定費',     cats: ['家賃・送金','奨学金','税金','保険','通信費','光熱費','サブスク'] },
+  { key: 'other',  name: 'その他',     cats: ['仕事関連','その他'] },
+];
+
+// カテゴリ→グループの逆引き。未知カテゴリは other 扱い
+function getCategoryGroup(cat) {
+  for (const g of CATEGORY_GROUPS) {
+    if (g.cats.includes(cat)) return g.key;
+  }
+  return 'other';
+}
+
+// 固定費扱いのカテゴリか(fixed グループ or fixedExpenses に登録済み)
+function isFixedCategory(cat) {
+  if (getCategoryGroup(cat) === 'fixed') return true;
+  return Object.prototype.hasOwnProperty.call(DATA.fixedExpenses || {}, cat);
+}
 
 // 初期セットアップ:あなたの状況に合わせた既定値
 const DEFAULT_DATA = {
@@ -1792,19 +1985,26 @@ const DEFAULT_DATA = {
   categories: DEFAULT_CATEGORIES,
   // カテゴリ別月予算(ホーム画面の進捗バー用)
   budgets: {
-    '食費': 30000,
-    '日用品': 5000,
-    '交通費': 5000,
-    '光熱費': 7500,
+    '食料品・スーパー': 5000,
+    '外食・弁当': 10000,
+    'コンビニ・間食': 2000,
+    '飲み会・食事会': 30000,
+    '日用品': 4000,
+    '交通費': 10000,
+    '光熱費': 5000,
     '通信費': 6000,
     '医療・健康': 2000,
-    '娯楽': 20000,
-    '交際費': 24000,
+    '趣味・レジャー': 12000,
+    '本・教養': 3000,
+    'タバコ': 2000,
     '衣服・美容': 5000,
+    '贈り物・お土産': 5000,
     '保険': 8000,
     'サブスク': 2400,
+    '家賃・送金': 60000,
+    '税金': 20000,
     '奨学金': 33936,
-    '仕事関連': 5000,
+    '仕事関連': 3000,
     'その他': 3000,
   },
   // 月別予測収入(yyyy-mm: 円)
@@ -1815,16 +2015,19 @@ const DEFAULT_DATA = {
   ],
   // 固定費の月間見込み額(未払いでも予算から先引きされる)
   fixedExpenses: {
-    '光熱費': 7500,
+    '光熱費': 5000,
     '通信費': 6000,
     '保険': 8000,
     '奨学金': 33936,
     'サブスク': 2400,
+    '家賃・送金': 60000,
+    '税金': 20000,
   },
   // 設定
   config: {
     monthlyDebtTarget: 11000,
     debtTargets: {}, // { accountId: 月返済額 } リボ口座ごとの月返済目標
+    debtApr: 15.0,   // リボ手数料 実質年率(%) 完済シミュレーター用
   },
 };
 
@@ -2002,20 +2205,35 @@ function renderHome() {
   const ms = getMonthSummary(now.getFullYear(), now.getMonth());
   const totals = getTotals();
 
-  // 今月の総予算 = カテゴリ予算の合計
-  const totalBudget = Object.values(DATA.budgets).reduce((a,b) => a + Number(b||0), 0);
-
-  // 固定費見込み: 実績未満なら0、超えた分だけ追加で引く
-  let fixedReservedTotal = 0;
-  for (const [cat, fixedAmt] of Object.entries(DATA.fixedExpenses || {})) {
-    const actual = ms.catSpent[cat] || 0;
-    fixedReservedTotal += Math.max(0, Number(fixedAmt) - actual);
+  // 予算を「変動費」と「固定費」に分ける
+  // 変動費 = 日々の判断で増減するお金(ヒーローに表示)
+  // 固定費 = 家賃送金・奨学金・税金など、毎月自動的に出るお金(確保済みとして1行表示)
+  let variableBudget = 0, fixedBudget = 0;
+  for (const [cat, amt] of Object.entries(DATA.budgets)) {
+    if (isFixedCategory(cat)) fixedBudget += Number(amt || 0);
+    else variableBudget += Number(amt || 0);
   }
-  const effectiveExpense = ms.expense + fixedReservedTotal;
-  const remaining = totalBudget - effectiveExpense;
-  const usedPct = totalBudget > 0 ? Math.min(100, (effectiveExpense / totalBudget) * 100) : 0;
+  let variableSpent = 0, fixedSpent = 0;
+  for (const [cat, amt] of Object.entries(ms.catSpent)) {
+    if (isFixedCategory(cat)) fixedSpent += Number(amt || 0);
+    else variableSpent += Number(amt || 0);
+  }
 
-  // ヒーロー
+  // リボ月返済: 今月の支払い済み分を差し引いた残り(固定費側に合算)
+  const riboAcctIds = new Set(
+    DATA.accounts.filter(a => a.type === 'credit' && a.ribo).map(a => a.id)
+  );
+  const debtTargetsCalc = DATA.config.debtTargets || {};
+  const riboMonthlyCalc = [...riboAcctIds].reduce((s, id) => s + Number(debtTargetsCalc[id] || 0), 0);
+  const riboActualPayments = DATA.transactions
+    .filter(tx => tx.type === 'payment' && riboAcctIds.has(tx.accountTo))
+    .filter(tx => { const d = new Date(tx.date); return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth(); })
+    .reduce((s, tx) => s + Number(tx.amount), 0);
+
+  const remaining = variableBudget - variableSpent;
+  const usedPct = variableBudget > 0 ? Math.min(100, (variableSpent / variableBudget) * 100) : 0;
+
+  // ヒーロー: 変動費だけ(固定費は下の1行に分離)
   document.getElementById('heroValue').innerHTML =
     `<span class="yen">¥</span>${fmtNum(remaining)}`;
   const progEl = document.getElementById('heroProgress');
@@ -2024,11 +2242,47 @@ function renderHome() {
   if (usedPct > 90) progEl.classList.add('danger');
   else if (usedPct > 70) progEl.classList.add('warn');
 
-  const reservedNote = fixedReservedTotal > 0
-    ? ` <span style="color:var(--gold);font-size:11px;">+ 見込み ${fmtYen(fixedReservedTotal)}</span>`
-    : '';
   document.getElementById('heroSub').innerHTML =
-    `予算 <span class="num">${fmtYen(totalBudget)}</span> / 使った <span class="num">${fmtYen(ms.expense)}</span>${reservedNote}(${Math.round(usedPct)}%)`;
+    `変動費予算 <span class="num">${fmtYen(variableBudget)}</span> / 使った <span class="num">${fmtYen(variableSpent)}</span>(${Math.round(usedPct)}%)`;
+
+  // 固定費+リボの確保状況(1行サマリ)
+  const fixedTotal = fixedBudget + riboMonthlyCalc;
+  const fixedPaid = fixedSpent + riboActualPayments;
+  document.getElementById('heroFixed').innerHTML =
+    `🔒 固定費+リボ <span class="num">${fmtYen(fixedTotal)}</span>/月 は別枠で確保済み(支払済 ${fmtYen(fixedPaid)})`;
+
+  // 資金ショートチェック: 現金+銀行の残高で、これから出るお金を払えるか
+  const liquid = DATA.accounts
+    .filter(a => a.type === 'cash' || a.type === 'bank')
+    .reduce((s, a) => s + getAccountBalance(a.id), 0);
+  const billsWaiting = DATA.accounts
+    .filter(a => a.type === 'credit' && !a.ribo)
+    .reduce((s, a) => s + Math.max(0, getAccountBalance(a.id)), 0);
+  const riboRemaining = Math.max(0, riboMonthlyCalc - riboActualPayments);
+  const fixedRemaining = Math.max(0, fixedBudget - fixedSpent);
+  const upcoming = billsWaiting + riboRemaining + fixedRemaining;
+  const cashAlertEl = document.getElementById('cashAlert');
+  if (upcoming > 0 && liquid < upcoming) {
+    cashAlertEl.innerHTML = `
+      <div class="alert-card">
+        <div class="alert-title">⚠️ 引き落とし資金が足りない可能性</div>
+        <div class="alert-body">
+          現金+銀行 <b>${fmtYen(liquid)}</b> に対し、
+          これから出るお金は <b>${fmtYen(upcoming)}</b>(概算)。
+          <b>${fmtYen(upcoming - liquid)}</b> 不足しそうです。
+        </div>
+        <div class="alert-detail">
+          内訳: カード請求待ち ${fmtYen(billsWaiting)} / 固定費残り ${fmtYen(fixedRemaining)} / リボ返済残り ${fmtYen(riboRemaining)}
+        </div>
+      </div>`;
+  } else if (upcoming > 0) {
+    cashAlertEl.innerHTML = `
+      <div class="alert-card ok">
+        <div class="alert-body">✓ 支払い余力 <b>${fmtYen(liquid - upcoming)}</b>(現金+銀行 ${fmtYen(liquid)} − 支払い予定 ${fmtYen(upcoming)})</div>
+      </div>`;
+  } else {
+    cashAlertEl.innerHTML = '';
+  }
 
   // 判断ボックス
   renderJudge(remaining, totals);
@@ -2041,16 +2295,21 @@ function renderHome() {
   document.getElementById('miniDebt').innerHTML =
     `<span class="yen">¥</span>${fmtNum(totals.liab)}`;
 
-  // リボ完済予測（リボ口座の合計で計算）
+  // リボ完済予測（利息込み・完済シミュレーターと同じ計算）
   const riboAccts = DATA.accounts.filter(a => a.type === 'credit' && a.ribo);
   const riboTotal = riboAccts.reduce((s, a) => s + Math.max(0, getAccountBalance(a.id)), 0);
-  const debtTargets = DATA.config.debtTargets || {};
-  const riboMonthly = Object.values(debtTargets).reduce((s, v) => s + Number(v || 0), 0);
-  const riboMonths = (riboTotal > 0 && riboMonthly > 0) ? Math.ceil(riboTotal / riboMonthly) : 0;
-  document.getElementById('miniDebtSub').textContent =
-    riboTotal > 0
-      ? (riboMonthly > 0 ? `リボ月${fmtYen(riboMonthly)}返済で${riboMonths}ヶ月` : 'リボ月返済額を設定してください')
-      : '完済済み 🎉';
+  let riboSubText;
+  if (riboTotal <= 0) {
+    riboSubText = '完済済み 🎉';
+  } else if (riboMonthlyCalc <= 0) {
+    riboSubText = 'リボ月返済額を設定してください';
+  } else {
+    const sim = simulatePayoff(riboTotal, riboMonthlyCalc, Number(DATA.config.debtApr ?? 15));
+    riboSubText = sim.never
+      ? `月${fmtYen(riboMonthlyCalc)}では利息に負けます ⚠️`
+      : `リボ月${fmtYen(riboMonthlyCalc)}返済で${sim.months}ヶ月`;
+  }
+  document.getElementById('miniDebtSub').textContent = riboSubText;
 
   // 純資産
   const netEl = document.getElementById('miniNet');
@@ -2060,7 +2319,7 @@ function renderHome() {
   netEl.classList.toggle('negative', totals.net < 0);
 
   // カテゴリ別予算進捗
-  renderBudgetList(ms.catSpent);
+  renderBudgetList(ms.catSpent, riboMonthlyCalc, riboActualPayments);
 }
 
 function renderJudge(monthRemaining, totals) {
@@ -2077,13 +2336,17 @@ function renderJudge(monthRemaining, totals) {
 
   const items = [];
 
-  // 今月の変動費から
+  // 今月の変動費から(残り日数で日割りペースを出す)
+  const nowJ = new Date();
+  const daysInMonth = new Date(nowJ.getFullYear(), nowJ.getMonth() + 1, 0).getDate();
+  const daysLeft = daysInMonth - nowJ.getDate() + 1;
+  const perDay = monthRemaining > 0 ? Math.floor(monthRemaining / daysLeft) : 0;
   const tightness = monthRemaining < 10000 ? 'tight' : (monthRemaining < 30000 ? 'tight' : 'ok');
   items.push({
     label: '今月の変動費から',
     amount: monthRemaining,
     cls: monthRemaining > 0 ? tightness : 'locked',
-    note: monthRemaining > 0 ? '日常の買い物に' : '今月は使い切り',
+    note: monthRemaining > 0 ? `残り${daysLeft}日 · 1日 ${fmtYen(perDay)} ペースでOK` : '今月は使い切り',
   });
 
   // 長期資産(リボ完済までロック)
@@ -2123,41 +2386,50 @@ function renderJudge(monthRemaining, totals) {
   `).join('');
 }
 
-function renderBudgetList(catSpent) {
+function renderBudgetList(catSpent, riboMonthlyTotal = 0, riboActualPaid = 0) {
   const el = document.getElementById('budgetList');
   const fixed = DATA.fixedExpenses || {};
-  const rows = [];
+
+  // グループごとに行を組み立てる(固定費グループは最後)
+  const groupRows = {};
+  for (const g of CATEGORY_GROUPS) groupRows[g.key] = [];
   for (const cat of DATA.categories) {
     const budget = Number(DATA.budgets[cat] || 0);
     const spent = Number(catSpent[cat] || 0);
     const fixedAmt = Number(fixed[cat] || 0);
     const reserved = Math.max(0, fixedAmt - spent);
     if (budget === 0 && spent === 0 && reserved === 0) continue;
-    rows.push({ cat, budget, spent, reserved });
+    groupRows[getCategoryGroup(cat)].push({ cat, budget, spent, reserved, isRibo: false });
   }
-  // 実績＋見込みの合計が多い順にソート
-  rows.sort((a, b) => (b.spent + b.reserved) - (a.spent + a.reserved));
-
-  if (rows.length === 0) {
-    el.innerHTML = `<div style="padding:20px;text-align:center;color:var(--gray);font-style:italic;font-size:12px;">予算カテゴリを設定しましょう。<br>(設定タブから)</div>`;
-    return;
+  // 旧カテゴリ名の支出(カテゴリ一覧に無いもの)も拾って表示する
+  for (const cat of Object.keys(catSpent)) {
+    if (DATA.categories.includes(cat)) continue;
+    const spent = Number(catSpent[cat] || 0);
+    if (spent === 0) continue;
+    groupRows[getCategoryGroup(cat)].push({ cat: cat + ' (旧)', budget: 0, spent, reserved: 0, isRibo: false });
+  }
+  // リボ返済は固定費グループの先頭
+  if (riboMonthlyTotal > 0) {
+    const riboRes = Math.max(0, riboMonthlyTotal - riboActualPaid);
+    groupRows.fixed.unshift({ cat: 'リボ返済', budget: riboMonthlyTotal, spent: riboActualPaid, reserved: riboRes, isRibo: true });
   }
 
-  el.innerHTML = rows.map(r => {
-    const effective = r.spent + r.reserved;
-    const pctSpent = r.budget > 0 ? Math.min(100, (r.spent / r.budget) * 100) : 0;
+  const renderRow = (r) => {
+    const pctSpent = r.budget > 0 ? Math.min(100, (r.spent / r.budget) * 100) : (r.spent > 0 ? 100 : 0);
     const pctReserved = r.budget > 0 ? Math.min(100 - pctSpent, (r.reserved / r.budget) * 100) : 0;
     const pctTotal = pctSpent + pctReserved;
     let cls = '';
     if (pctTotal >= 100) cls = 'over';
     else if (pctTotal >= 80) cls = 'warn';
+    const reservedLabel = r.isRibo ? '未払い' : '見込み';
     const reservedNote = r.reserved > 0
-      ? ` <span class="reserved">+見込み${fmtYen(r.reserved)}</span>`
+      ? ` <span class="reserved">+${reservedLabel}${fmtYen(r.reserved)}</span>`
       : '';
+    const nameStyle = r.isRibo ? ' style="color:var(--gold)"' : '';
     return `
       <div class="budget-row">
         <div class="budget-row-top">
-          <span class="budget-row-name">${escapeHtml(r.cat)}</span>
+          <span class="budget-row-name"${nameStyle}>${escapeHtml(r.cat)}</span>
           <span class="budget-row-amt">
             <span class="used">${fmtYen(r.spent)}</span>${reservedNote} / ${fmtYen(r.budget)}
           </span>
@@ -2168,7 +2440,27 @@ function renderBudgetList(catSpent) {
         </div>
       </div>
     `;
-  }).join('');
+  };
+
+  let html = '';
+  for (const g of CATEGORY_GROUPS) {
+    const rows = groupRows[g.key];
+    if (rows.length === 0) continue;
+    // グループ内は消化額が多い順
+    rows.sort((a, b) => (b.spent + b.reserved) - (a.spent + a.reserved));
+    const gBudget = rows.reduce((s, r) => s + r.budget, 0);
+    const gSpent = rows.reduce((s, r) => s + r.spent, 0);
+    html += `
+      <div class="budget-group">
+        <div class="budget-group-title">
+          <span>${g.name}</span>
+          <span class="budget-group-amt">${fmtYen(gSpent)} / ${fmtYen(gBudget)}</span>
+        </div>
+        ${rows.map(renderRow).join('')}
+      </div>`;
+  }
+
+  el.innerHTML = html || `<div style="padding:20px;text-align:center;color:var(--gray);font-style:italic;font-size:12px;">予算カテゴリを設定しましょう。<br>(設定タブから)</div>`;
 }
 
 // ── RECORD ────────────────────────────
@@ -2209,11 +2501,22 @@ function renderRecord() {
     categorySection.classList.add('hidden');
   }
 
-  // カテゴリチップ
+  // カテゴリチップ(グループ見出し付き)
   const catChips = document.getElementById('catChips');
-  catChips.innerHTML = DATA.categories.map(c => `
-    <button type="button" class="cat-chip ${c === selectedCategory ? 'active' : ''}" data-cat="${escapeHtml(c)}">${escapeHtml(c)}</button>
-  `).join('');
+  {
+    const chipGroups = {};
+    for (const g of CATEGORY_GROUPS) chipGroups[g.key] = [];
+    for (const c of DATA.categories) chipGroups[getCategoryGroup(c)].push(c);
+    catChips.innerHTML = CATEGORY_GROUPS.map(g => {
+      const cats = chipGroups[g.key];
+      if (cats.length === 0) return '';
+      return `
+        <div class="chip-group-label">${g.name}</div>
+        <div class="chip-group">${cats.map(c => `
+          <button type="button" class="cat-chip ${c === selectedCategory ? 'active' : ''}" data-cat="${escapeHtml(c)}">${escapeHtml(c)}</button>
+        `).join('')}</div>`;
+    }).join('');
+  }
   catChips.querySelectorAll('.cat-chip').forEach(chip => {
     chip.addEventListener('click', () => {
       selectedCategory = chip.dataset.cat;
@@ -2264,6 +2567,56 @@ function renderRecord() {
       });
     });
   }
+
+  renderQuickTx();
+}
+
+// よく使う記録: 直近90日で2回以上繰り返している支出パターンをワンタップ入力に
+function renderQuickTx() {
+  const el = document.getElementById('quickTx');
+  if (!el) return;
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 90);
+  const groups = {};
+  for (const tx of DATA.transactions) {
+    if (tx.type !== 'expense') continue;
+    if (new Date(tx.date) < cutoff) continue;
+    const key = `${tx.category}|${tx.amount}|${tx.account}`;
+    if (!groups[key]) groups[key] = { count: 0, tx };
+    groups[key].count++;
+    if (tx.date > groups[key].tx.date) groups[key].tx = tx;
+  }
+  const top = Object.values(groups)
+    .filter(g => g.count >= 2)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 6);
+  if (top.length === 0) { el.innerHTML = ''; return; }
+
+  el.innerHTML = `
+    <div class="quick-tx-card">
+      <div class="chip-group-label">よく使う記録(タップで下のフォームに入力)</div>
+      <div class="quick-tx-list">${top.map((g, i) => `
+        <button type="button" class="quick-tx-chip" data-idx="${i}">
+          <span class="qt-amt">${fmtYen(Number(g.tx.amount))}</span>
+          <span class="qt-memo">${escapeHtml(g.tx.memo || g.tx.category)}</span>
+          <span class="qt-count">×${g.count}</span>
+        </button>`).join('')}
+      </div>
+    </div>`;
+
+  el.querySelectorAll('.quick-tx-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const g = top[Number(btn.dataset.idx)];
+      currentTxType = 'expense';
+      selectedCategory = g.tx.category;
+      selectedAccount = g.tx.account;
+      document.getElementById('txAmount').value = g.tx.amount;
+      document.getElementById('txMemo').value = g.tx.memo || '';
+      document.getElementById('txDate').value = todayStr();
+      renderRecord();
+      document.getElementById('submitTx').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  });
 }
 
 // ── ANNUAL ────────────────────────────
@@ -2361,6 +2714,8 @@ function renderDebt() {
   const credAccts = DATA.accounts.filter(a => a.type === 'credit');
   if (credAccts.length === 0) {
     debtList.innerHTML = `<div class="help-card">クレジットカードが登録されていません。</div>`;
+    const simEl = document.getElementById('debtSim');
+    if (simEl) simEl.innerHTML = '';
     return;
   }
 
@@ -2449,6 +2804,110 @@ function renderDebt() {
   }
 
   debtList.innerHTML = html || `<div class="help-card">クレジットカードが登録されていません。</div>`;
+
+  // 完済シミュレーター(利息込み)
+  {
+    let riboTotalAll = 0, riboMonthlyAll = 0;
+    for (const a of riboAccts) {
+      riboTotalAll += Math.max(0, getAccountBalance(a.id));
+      riboMonthlyAll += Number(debtTargets[a.id] || 0);
+    }
+    renderDebtSim(riboTotalAll, riboMonthlyAll);
+  }
+}
+
+// 利息込みの完済シミュレーション。apr は年率(%)。
+// 返済額が月利息以下なら完済不能(never)。
+function simulatePayoff(balance, payment, aprPct) {
+  if (balance <= 0) return { months: 0, interest: 0 };
+  if (payment <= 0) return { never: true };
+  const r = aprPct / 100 / 12;
+  let b = balance, interest = 0, months = 0;
+  while (b > 0 && months < 1200) {
+    const i = b * r;
+    if (payment <= i) return { never: true };
+    interest += i;
+    b = b + i - payment;
+    months++;
+  }
+  if (b > 0) return { never: true };
+  return { months, interest: Math.round(interest) };
+}
+
+function renderDebtSim(riboTotal, riboMonthly) {
+  const el = document.getElementById('debtSim');
+  if (!el) return;
+  if (riboTotal <= 0) { el.innerHTML = ''; return; }
+
+  const apr = Number(DATA.config.debtApr ?? 15);
+
+  el.innerHTML = `
+    <div class="debt-card">
+      <div class="sim-field-row">
+        <label>リボ手数料 実質年率</label>
+        <span><input type="number" id="simApr" value="${apr}" min="0" max="20" step="0.1" style="width:70px;text-align:right;"> %</span>
+      </div>
+      <div class="sim-field-row">
+        <label>毎月の追加返済額</label>
+        <span><input type="number" id="simExtra" value="0" min="0" step="1000" style="width:100px;text-align:right;"> 円</span>
+      </div>
+      <div id="debtSimResults"></div>
+      <div style="font-size:10px;color:var(--gray);margin-top:8px;">
+        ※ 概算。実際の手数料計算方式(元金定額/元利定額)により多少前後します。年率はカード明細で確認を。
+      </div>
+    </div>`;
+
+  const resultsEl = document.getElementById('debtSimResults');
+  const update = () => {
+    const aprNow = Number(document.getElementById('simApr').value || 0);
+    const extra = Number(document.getElementById('simExtra').value || 0);
+    const scenarios = [
+      { label: '現状のまま', extra: 0 },
+      { label: '+5,000円', extra: 5000 },
+      { label: '+10,000円', extra: 10000 },
+      { label: '+20,000円', extra: 20000 },
+    ];
+    if (extra > 0 && !scenarios.some(s => s.extra === extra)) {
+      scenarios.push({ label: `+${fmtNum(extra)}円(入力値)`, extra });
+    }
+    const base = simulatePayoff(riboTotal, riboMonthly, aprNow);
+    const rowsHtml = scenarios.map(s => {
+      const pay = riboMonthly + s.extra;
+      const r = simulatePayoff(riboTotal, pay, aprNow);
+      const isInput = extra > 0 && s.extra === extra;
+      let result, interest;
+      if (r.never) {
+        result = '<span style="color:var(--accent);font-weight:700;">終わらない ⚠️</span>';
+        interest = '増え続ける';
+      } else {
+        result = `${r.months}ヶ月 (${getCompletionMonth(r.months)})`;
+        interest = fmtYen(r.interest);
+        if (!base.never && !r.never && s.extra > 0) {
+          const saved = base.interest - r.interest;
+          if (saved > 0) interest += ` <span style="color:var(--green);font-size:10px;">▲${fmtYen(saved)}</span>`;
+        }
+      }
+      return `
+        <tr${isInput ? ' style="background:var(--paper);"' : ''}>
+          <td>${s.label}<br><span style="color:var(--gray);font-size:10px;">月${fmtYen(pay)}</span></td>
+          <td>${result}</td>
+          <td>${interest}</td>
+        </tr>`;
+    }).join('');
+    resultsEl.innerHTML = `
+      <table class="sim-table">
+        <thead><tr><th>返済プラン</th><th>完済まで</th><th>利息総額(概算)</th></tr></thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>`;
+  };
+
+  document.getElementById('simApr').addEventListener('input', () => {
+    DATA.config.debtApr = Number(document.getElementById('simApr').value || 0);
+    saveData();
+    update();
+  });
+  document.getElementById('simExtra').addEventListener('input', update);
+  update();
 }
 
 function getCompletionMonth(monthsAhead) {
@@ -2973,13 +3432,14 @@ document.getElementById('btnDownloadSetup').addEventListener('click', () => {
       {id:'invest1',       type:'invest', name:'NISA/iDeCo',              opening:0}
     ],
     transactions: [],
-    categories: ['食費','日用品','交通費','光熱費','通信費','医療・健康','娯楽','交際費','衣服・美容','保険','サブスク','奨学金','仕事関連','その他'],
-    budgets: {食費:30000,日用品:5000,交通費:5000,光熱費:7500,通信費:6000,医療・健康:2000,娯楽:20000,交際費:24000,衣服・美容:5000,保険:8000,サブスク:2400,奨学金:33936,仕事関連:5000,その他:3000},
-    fixedExpenses: {光熱費:7500,通信費:6000,保険:8000,奨学金:33936,サブスク:2400},
+    categories: ['食料品・スーパー','外食・弁当','コンビニ・間食','飲み会・食事会','日用品','交通費','光熱費','通信費','医療・健康','趣味・レジャー','本・教養','タバコ','衣服・美容','贈り物・お土産','保険','サブスク','家賃・送金','税金','奨学金','仕事関連','その他'],
+    budgets: {食料品・スーパー:5000,外食・弁当:10000,コンビニ・間食:2000,飲み会・食事会:30000,日用品:4000,交通費:10000,光熱費:5000,通信費:6000,医療・健康:2000,趣味・レジャー:12000,本・教養:3000,タバコ:2000,衣服・美容:5000,贈り物・お土産:5000,保険:8000,サブスク:2400,家賃・送金:60000,税金:20000,奨学金:33936,仕事関連:3000,その他:3000},
+    fixedExpenses: {光熱費:5000,通信費:6000,保険:8000,奨学金:33936,サブスク:2400,家賃・送金:60000,税金:20000},
     monthlyIncomes: {},
     events: [{id:'e1',name:'冠婚葬祭備え',amount:150000,date:'2027-03-31',saved:0}],
     config: {
       monthlyDebtTarget: 11000,
+      debtApr: 15.0,
       debtTargets: {
         'cc-rakuten-ribo':  3000,
         'cc-paypay-ribo':  5000,
