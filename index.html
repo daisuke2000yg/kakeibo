@@ -609,6 +609,93 @@
     vertical-align: top;
   }
 
+  /* cash shortfall alert */
+  .alert-card {
+    background: var(--paper-deep);
+    border: 2px solid var(--accent);
+    padding: 12px 14px;
+    margin-bottom: 14px;
+  }
+  .alert-card.ok {
+    border: 1px solid var(--gray-soft);
+    padding: 8px 14px;
+  }
+  .alert-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .alert-body {
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  .alert-card.ok .alert-body {
+    font-size: 11px;
+    color: var(--gray);
+  }
+  .alert-body b {
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .alert-detail {
+    font-size: 10px;
+    color: var(--gray);
+    margin-top: 6px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* quick transaction chips */
+  .quick-tx-card {
+    background: var(--paper-deep);
+    border: 1px solid var(--ink);
+    padding: 12px 14px;
+    margin-bottom: 14px;
+  }
+  .quick-tx-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+  .quick-tx-chip {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    padding: 8px 10px;
+    background: var(--paper);
+    border: 1px solid var(--gray-soft);
+    cursor: pointer;
+    text-align: left;
+    position: relative;
+    color: var(--ink);
+    font-family: 'Noto Sans JP', sans-serif;
+  }
+  .quick-tx-chip:active {
+    background: var(--ink);
+    color: var(--paper);
+  }
+  .qt-amt {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 13px;
+  }
+  .qt-memo {
+    font-size: 10px;
+    color: var(--gray);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+  .qt-count {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    font-size: 9px;
+    color: var(--gold);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
   /* ── RECORD FORM ────────────────────── */
   .form-card {
     background: var(--paper-deep);
@@ -1278,6 +1365,9 @@
       <div class="hero-fixed" id="heroFixed"></div>
     </div>
 
+    <!-- 資金ショート警告(不足時のみ表示) -->
+    <div id="cashAlert"></div>
+
     <!-- 判断ボックス:今これ買える? -->
     <div class="judge-card">
       <div class="judge-title">
@@ -1323,6 +1413,8 @@
   <!-- RECORD / 記録                     -->
   <!-- ════════════════════════════════ -->
   <section class="panel" id="panel-record">
+    <div id="quickTx"></div>
+
     <div class="form-card">
       <div class="form-title">記録する</div>
 
@@ -2159,6 +2251,39 @@ function renderHome() {
   document.getElementById('heroFixed').innerHTML =
     `🔒 固定費+リボ <span class="num">${fmtYen(fixedTotal)}</span>/月 は別枠で確保済み(支払済 ${fmtYen(fixedPaid)})`;
 
+  // 資金ショートチェック: 現金+銀行の残高で、これから出るお金を払えるか
+  const liquid = DATA.accounts
+    .filter(a => a.type === 'cash' || a.type === 'bank')
+    .reduce((s, a) => s + getAccountBalance(a.id), 0);
+  const billsWaiting = DATA.accounts
+    .filter(a => a.type === 'credit' && !a.ribo)
+    .reduce((s, a) => s + Math.max(0, getAccountBalance(a.id)), 0);
+  const riboRemaining = Math.max(0, riboMonthlyCalc - riboActualPayments);
+  const fixedRemaining = Math.max(0, fixedBudget - fixedSpent);
+  const upcoming = billsWaiting + riboRemaining + fixedRemaining;
+  const cashAlertEl = document.getElementById('cashAlert');
+  if (upcoming > 0 && liquid < upcoming) {
+    cashAlertEl.innerHTML = `
+      <div class="alert-card">
+        <div class="alert-title">⚠️ 引き落とし資金が足りない可能性</div>
+        <div class="alert-body">
+          現金+銀行 <b>${fmtYen(liquid)}</b> に対し、
+          これから出るお金は <b>${fmtYen(upcoming)}</b>(概算)。
+          <b>${fmtYen(upcoming - liquid)}</b> 不足しそうです。
+        </div>
+        <div class="alert-detail">
+          内訳: カード請求待ち ${fmtYen(billsWaiting)} / 固定費残り ${fmtYen(fixedRemaining)} / リボ返済残り ${fmtYen(riboRemaining)}
+        </div>
+      </div>`;
+  } else if (upcoming > 0) {
+    cashAlertEl.innerHTML = `
+      <div class="alert-card ok">
+        <div class="alert-body">✓ 支払い余力 <b>${fmtYen(liquid - upcoming)}</b>(現金+銀行 ${fmtYen(liquid)} − 支払い予定 ${fmtYen(upcoming)})</div>
+      </div>`;
+  } else {
+    cashAlertEl.innerHTML = '';
+  }
+
   // 判断ボックス
   renderJudge(remaining, totals);
 
@@ -2211,13 +2336,17 @@ function renderJudge(monthRemaining, totals) {
 
   const items = [];
 
-  // 今月の変動費から
+  // 今月の変動費から(残り日数で日割りペースを出す)
+  const nowJ = new Date();
+  const daysInMonth = new Date(nowJ.getFullYear(), nowJ.getMonth() + 1, 0).getDate();
+  const daysLeft = daysInMonth - nowJ.getDate() + 1;
+  const perDay = monthRemaining > 0 ? Math.floor(monthRemaining / daysLeft) : 0;
   const tightness = monthRemaining < 10000 ? 'tight' : (monthRemaining < 30000 ? 'tight' : 'ok');
   items.push({
     label: '今月の変動費から',
     amount: monthRemaining,
     cls: monthRemaining > 0 ? tightness : 'locked',
-    note: monthRemaining > 0 ? '日常の買い物に' : '今月は使い切り',
+    note: monthRemaining > 0 ? `残り${daysLeft}日 · 1日 ${fmtYen(perDay)} ペースでOK` : '今月は使い切り',
   });
 
   // 長期資産(リボ完済までロック)
@@ -2438,6 +2567,56 @@ function renderRecord() {
       });
     });
   }
+
+  renderQuickTx();
+}
+
+// よく使う記録: 直近90日で2回以上繰り返している支出パターンをワンタップ入力に
+function renderQuickTx() {
+  const el = document.getElementById('quickTx');
+  if (!el) return;
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 90);
+  const groups = {};
+  for (const tx of DATA.transactions) {
+    if (tx.type !== 'expense') continue;
+    if (new Date(tx.date) < cutoff) continue;
+    const key = `${tx.category}|${tx.amount}|${tx.account}`;
+    if (!groups[key]) groups[key] = { count: 0, tx };
+    groups[key].count++;
+    if (tx.date > groups[key].tx.date) groups[key].tx = tx;
+  }
+  const top = Object.values(groups)
+    .filter(g => g.count >= 2)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 6);
+  if (top.length === 0) { el.innerHTML = ''; return; }
+
+  el.innerHTML = `
+    <div class="quick-tx-card">
+      <div class="chip-group-label">よく使う記録(タップで下のフォームに入力)</div>
+      <div class="quick-tx-list">${top.map((g, i) => `
+        <button type="button" class="quick-tx-chip" data-idx="${i}">
+          <span class="qt-amt">${fmtYen(Number(g.tx.amount))}</span>
+          <span class="qt-memo">${escapeHtml(g.tx.memo || g.tx.category)}</span>
+          <span class="qt-count">×${g.count}</span>
+        </button>`).join('')}
+      </div>
+    </div>`;
+
+  el.querySelectorAll('.quick-tx-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const g = top[Number(btn.dataset.idx)];
+      currentTxType = 'expense';
+      selectedCategory = g.tx.category;
+      selectedAccount = g.tx.account;
+      document.getElementById('txAmount').value = g.tx.amount;
+      document.getElementById('txMemo').value = g.tx.memo || '';
+      document.getElementById('txDate').value = todayStr();
+      renderRecord();
+      document.getElementById('submitTx').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  });
 }
 
 // ── ANNUAL ────────────────────────────
