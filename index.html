@@ -644,6 +644,75 @@
     font-family: 'JetBrains Mono', monospace;
   }
 
+  /* 月初の締め作業チェックリスト */
+  .todo-card {
+    background: var(--paper-deep);
+    border: 2px solid var(--gold);
+    padding: 12px 14px;
+    margin-bottom: 14px;
+  }
+  .todo-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--gold);
+  }
+  .todo-sub {
+    font-size: 10px;
+    color: var(--gray);
+    margin: 3px 0 8px;
+  }
+  .todo-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--paper);
+    font-size: 12px;
+  }
+  .todo-row:last-child { border-bottom: none; }
+  .todo-row.done { opacity: 0.5; }
+  .todo-check {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--green);
+    flex-shrink: 0;
+  }
+  .todo-check.pending { color: var(--gold); }
+  .todo-label {
+    flex: 1;
+    text-align: left;
+    color: var(--ink);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 12px;
+  }
+  .todo-label.as-link {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .todo-hint {
+    color: var(--gray);
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .todo-amt {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    flex-shrink: 0;
+  }
+  .todo-skip, .todo-undo {
+    background: none;
+    border: 1px solid var(--gray-soft);
+    color: var(--gray);
+    font-size: 10px;
+    padding: 3px 7px;
+    cursor: pointer;
+    font-family: 'Noto Sans JP', sans-serif;
+    flex-shrink: 0;
+  }
+
   /* quick transaction chips */
   .quick-tx-card {
     background: var(--paper-deep);
@@ -1498,6 +1567,9 @@
       <div class="hero-fixed" id="heroFixed"></div>
     </div>
 
+    <!-- 月初の締め作業(全部記録するまで消えない) -->
+    <div id="monthlyTodo"></div>
+
     <!-- 資金ショート警告(不足時のみ表示) -->
     <div id="cashAlert"></div>
 
@@ -1790,6 +1862,17 @@
         <input type="text" id="settingCategories" style="font-family: 'Noto Sans JP', sans-serif; font-size: 13px;">
       </div>
       <button class="ghost-btn" id="btnSaveCategories" style="margin-top: 8px;">保存</button>
+    </div>
+
+    <!-- 月初の締め作業 -->
+    <div class="settings-section">
+      <h3>月初の締め作業</h3>
+      <p class="setting-desc">毎月この日から、給与・カード引落・固定費の記録漏れをホームで警告します。全部記録すると自動で消えます。</p>
+      <div class="field">
+        <label>警告を出し始める日</label>
+        <input type="number" id="settingChecklistDay" min="1" max="28" step="1" inputmode="numeric" style="font-size:14px;padding:8px;">
+      </div>
+      <button class="ghost-btn" id="btnSaveChecklistDay" style="margin-top:8px;">保存</button>
     </div>
 
     <!-- カテゴリの付け替え(旧カテゴリの記録を新カテゴリへ移す) -->
@@ -2183,11 +2266,28 @@ const DEFAULT_DATA = {
     '家賃・送金': 60000,
     '税金': 19800,
   },
+  // 毎月3日に締める定例作業。記録されるまでホームの警告が消えない。
+  // match: この条件に合う取引が当月にあれば「記録済み」と自動判定する
+  //   type … 取引種別 / category … カテゴリ / accountTo … 返済先カード
+  //   memoKeyword … メモに含まれるべき語(電気とガスの区別など)
+  // カード引落の項目は登録済みクレジットカードから自動で作られるため
+  // ここには書かない(カードを増やせば自動で項目も増える)
+  monthlyChecklist: [
+    { id: 'salary',   label: '先月分の給与',   match: { type: 'income' },                                          hint: '役場 給料' },
+    { id: 'scholar',  label: '奨学金 返済',    match: { type: 'expense', category: '奨学金' },                      hint: '34,000' },
+    { id: 'denki',    label: '電気代',         match: { type: 'expense', category: '光熱費', memoKeyword: '電気' },  hint: '' },
+    { id: 'gas',      label: 'ガス代',         match: { type: 'expense', category: '光熱費', memoKeyword: 'ガス' },  hint: '' },
+    { id: 'keitai',   label: '携帯代',         match: { type: 'expense', category: '通信費' },                      hint: '' },
+    { id: 'subsc',    label: 'その他サブスク',  match: { type: 'expense', category: 'サブスク' },                    hint: 'ギター分割 14,600' },
+  ],
+  // { 'YYYY-MM': ['itemId', ...] } 当月は不要と判断した項目
+  checklistSkipped: {},
   // 設定
   config: {
     monthlyDebtTarget: 11000,
     debtTargets: {}, // { accountId: 月返済額 } リボ口座ごとの月返済目標
     debtApr: 15.0,   // リボ手数料 実質年率(%) 完済シミュレーター用
+    checklistDay: 3, // 毎月この日から締め作業の警告を出す
   },
 };
 
@@ -2226,6 +2326,8 @@ function loadData() {
       fixedExpenses: parsed.fixedExpenses || DEFAULT_DATA.fixedExpenses,
       monthlyIncomes: parsed.monthlyIncomes || {},
       events: parsed.events || [],
+      monthlyChecklist: parsed.monthlyChecklist || DEFAULT_DATA.monthlyChecklist,
+      checklistSkipped: parsed.checklistSkipped || {},
       config: Object.assign({}, DEFAULT_DATA.config, parsed.config || {}),
     };
   } catch(e) {
@@ -2421,6 +2523,8 @@ function renderHome() {
   const riboRemaining = Math.max(0, riboMonthlyCalc - riboActualPayments);
   const fixedRemaining = Math.max(0, fixedBudget - fixedSpent);
   const upcoming = billsWaiting + riboRemaining + fixedRemaining;
+  renderMonthlyTodo();
+
   const cashAlertEl = document.getElementById('cashAlert');
   if (upcoming > 0 && liquid < upcoming) {
     cashAlertEl.innerHTML = `
@@ -3322,6 +3426,152 @@ function renderHistoryFilters() {
     sortedMonths.map(m => `<option value="${m}">${m}</option>`).join('');
 }
 
+// ── 月初の締め作業チェックリスト ──────────
+// 「記録されたか」を取引そのものから判定する。チェックを手で押す方式だと
+// 押し忘れ・空押しが起きるため、当月に該当する取引があるかで自動判定する。
+function checklistItemDone(item, ym) {
+  const m = item.match || {};
+  return DATA.transactions.find(tx => {
+    if (ymStr(tx.date) !== ym) return false;
+    if (m.type && tx.type !== m.type) return false;
+    if (m.category && tx.category !== m.category) return false;
+    if (m.accountTo && tx.accountTo !== m.accountTo) return false;
+    if (m.account && tx.account !== m.account) return false;
+    if (m.memoKeyword && !(tx.memo || '').includes(m.memoKeyword)) return false;
+    return true;
+  }) || null;
+}
+
+// 該当するカテゴリが無い項目は記録しようがないので隠す
+function checklistItemApplicable(item) {
+  const m = item.match || {};
+  if (m.category && !DATA.categories.includes(m.category)) return false;
+  return true;
+}
+
+// 締め作業の項目 = 設定した定例項目 + 登録済みクレカごとの引落項目。
+// カード項目を口座から作ることで、口座IDの違いやカード追加に自動追従する。
+function getChecklistItems() {
+  const fixed = (DATA.monthlyChecklist || []).filter(checklistItemApplicable);
+  const cardItems = DATA.accounts
+    .filter(a => a.type === 'credit')
+    .map(a => ({
+      id: `pay:${a.id}`,
+      label: `${a.name} 引落`,
+      match: { type: 'payment', accountTo: a.id },
+      hint: '',
+    }));
+  // 給与を先頭に、カード引落、残りの固定費という並び
+  const salary = fixed.filter(i => i.match?.type === 'income');
+  const rest = fixed.filter(i => i.match?.type !== 'income');
+  return [...salary, ...cardItems, ...rest];
+}
+
+function getChecklistStatus(ym) {
+  const skipped = (DATA.checklistSkipped || {})[ym] || [];
+  return getChecklistItems().map(item => ({
+    item,
+    tx: checklistItemDone(item, ym),
+    skipped: skipped.includes(item.id),
+  }));
+}
+
+function renderMonthlyTodo() {
+  const el = document.getElementById('monthlyTodo');
+  if (!el) return;
+  const now = new Date();
+  const ym = ymStr(todayStr());
+  const startDay = Number(DATA.config.checklistDay ?? 3);
+  const status = getChecklistStatus(ym);
+
+  if (status.length === 0) { el.innerHTML = ''; return; }
+
+  const pending = status.filter(s => !s.tx && !s.skipped);
+  const doneCount = status.filter(s => s.tx).length;
+
+  // 締め日より前、または全部終わっていれば警告は出さない
+  if (now.getDate() < startDay || pending.length === 0) {
+    el.innerHTML = pending.length === 0 && doneCount > 0
+      ? `<div class="alert-card ok"><div class="alert-body">✓ 今月の締め作業は完了(${doneCount}件記録済み)</div></div>`
+      : '';
+    return;
+  }
+
+  el.innerHTML = `
+    <div class="todo-card">
+      <div class="todo-title">今月の締め作業が ${pending.length}件 残っています</div>
+      <div class="todo-sub">毎月${startDay}日の恒例。記録すると自動で消えます。</div>
+      <div class="todo-list">
+        ${status.map(s => {
+          if (s.tx) {
+            return `<div class="todo-row done">
+              <span class="todo-check">✓</span>
+              <span class="todo-label">${escapeHtml(s.item.label)}</span>
+              <span class="todo-amt">${fmtYen(Number(s.tx.amount))}</span>
+            </div>`;
+          }
+          if (s.skipped) {
+            return `<div class="todo-row done">
+              <span class="todo-check">—</span>
+              <span class="todo-label">${escapeHtml(s.item.label)}</span>
+              <span class="todo-amt" style="color:var(--gray)">今月はなし</span>
+              <button type="button" class="todo-undo" data-unskip="${escapeHtml(s.item.id)}">戻す</button>
+            </div>`;
+          }
+          return `<div class="todo-row">
+            <span class="todo-check pending">□</span>
+            <button type="button" class="todo-label as-link" data-todo="${escapeHtml(s.item.id)}">
+              ${escapeHtml(s.item.label)}${s.item.hint ? `<span class="todo-hint"> ${escapeHtml(s.item.hint)}</span>` : ''}
+            </button>
+            <button type="button" class="todo-skip" data-skip="${escapeHtml(s.item.id)}">なし</button>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+
+  // 項目をタップ → 記録タブを開いて種別・カテゴリ・支払先まで入れておく
+  el.querySelectorAll('[data-todo]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const item = getChecklistItems().find(i => i.id === btn.dataset.todo);
+      if (!item) return;
+      const m = item.match || {};
+      currentTxType = m.type || 'expense';
+      selectedCategory = m.category || null;
+      selectedAccountTo = m.accountTo || null;
+      selectedAccount = m.account || null;
+      // 引き落とし・入金の相手は預金口座が既定
+      if (!selectedAccount && (currentTxType === 'payment' || currentTxType === 'income')) {
+        const bank = DATA.accounts.find(a => a.type === 'bank');
+        if (bank) selectedAccount = bank.id;
+      }
+      document.querySelector('.nav-btn[data-panel="record"]').click();
+      document.getElementById('txAmount').value = '';
+      document.getElementById('txMemo').value = item.label;
+      document.getElementById('txDate').value = todayStr();
+      renderRecord();
+      document.getElementById('txAmount').focus();
+    });
+  });
+
+  el.querySelectorAll('[data-skip]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const list = DATA.checklistSkipped[ym] = DATA.checklistSkipped[ym] || [];
+      if (!list.includes(btn.dataset.skip)) list.push(btn.dataset.skip);
+      saveData();
+      renderHome();
+    });
+  });
+
+  el.querySelectorAll('[data-unskip]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const list = DATA.checklistSkipped[ym] || [];
+      DATA.checklistSkipped[ym] = list.filter(id => id !== btn.dataset.unskip);
+      saveData();
+      renderHome();
+    });
+  });
+}
+
 // 履歴の表示件数。スマホで全件描画すると数万pxになりスクロールが破綻するため区切る
 const HIST_PAGE_SIZE = 30;
 let histShown = HIST_PAGE_SIZE;
@@ -3570,6 +3820,7 @@ function renderRemap() {
 
 function renderSettings() {
   renderRemap();
+  document.getElementById('settingChecklistDay').value = Number(DATA.config.checklistDay ?? 3);
   // 月別収入予測グリッド
   const grid = document.getElementById('monthIncomesGrid');
   const today = new Date();
@@ -3809,6 +4060,15 @@ document.getElementById('eventDelete').addEventListener('click', () => {
     histDupOnly = false;
     renderHistory();
   });
+});
+
+document.getElementById('btnSaveChecklistDay').addEventListener('click', () => {
+  const v = Number(document.getElementById('settingChecklistDay').value);
+  if (!v || v < 1 || v > 28) { alert('1〜28 の日付を入れてください'); return; }
+  DATA.config.checklistDay = v;
+  saveData();
+  renderAll();
+  alert(`毎月${v}日から締め作業の警告を出します`);
 });
 
 document.getElementById('btnMoreTx').addEventListener('click', () => {
