@@ -926,6 +926,139 @@
   .tx-amt.expense { color: var(--red); }
   .tx-amt.transfer { color: var(--gray); }
 
+  /* サブタブ(資産タブ内の 口座/履歴 切替) */
+  .subtab-bar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    margin-bottom: 14px;
+    border: 1px solid var(--ink);
+  }
+  .subtab-btn {
+    padding: 11px 8px;
+    background: var(--paper);
+    border: none;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--gray);
+    cursor: pointer;
+  }
+  .subtab-btn.active {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  /* 履歴の絞り込みサマリ */
+  .hist-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 8px 10px;
+    margin-bottom: 10px;
+    background: var(--paper-deep);
+    border: 1px solid var(--gray-soft);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+  }
+  .hist-summary .hs-in { color: var(--green); }
+  .hist-summary .hs-out { color: var(--red); }
+  .hist-summary .hs-net { font-weight: 700; }
+  .hist-dup-note {
+    font-size: 11px;
+    color: var(--accent);
+    padding: 8px 10px;
+    margin-bottom: 10px;
+    border: 1px solid var(--accent);
+    line-height: 1.5;
+  }
+  .dup-filter-btn {
+    display: block;
+    margin-top: 6px;
+    padding: 5px 10px;
+    background: var(--accent);
+    color: var(--paper);
+    border: none;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .tx-card.dup { border-color: var(--gold); border-width: 2px; }
+  .dup-badge {
+    color: var(--gold);
+    font-weight: 700;
+  }
+
+  /* 実績レビュー */
+  .verdict {
+    padding: 14px;
+    margin-bottom: 14px;
+    border: 2px solid var(--gray-soft);
+    background: var(--paper-deep);
+  }
+  .verdict.bad { border-color: var(--accent); }
+  .verdict.ok  { border-color: var(--green); }
+  .verdict-head {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .verdict.bad .verdict-head { color: var(--accent); }
+  .verdict.ok  .verdict-head { color: var(--green); }
+  .verdict-body { font-size: 12px; line-height: 1.7; }
+  .verdict-body b { font-family: 'JetBrains Mono', monospace; }
+  .verdict-sources {
+    font-size: 10px;
+    color: var(--gray);
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--gray-soft);
+    line-height: 1.5;
+  }
+
+  .reality-card {
+    background: var(--paper-deep);
+    border: 1px solid var(--ink);
+    padding: 12px;
+    overflow-x: auto;
+  }
+  .reality-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  .reality-table th {
+    text-align: left;
+    font-size: 10px;
+    color: var(--gray);
+    font-weight: 700;
+    padding: 4px 6px;
+    border-bottom: 1px solid var(--gray-soft);
+  }
+  .reality-table td {
+    padding: 7px 6px;
+    border-bottom: 1px solid var(--paper);
+  }
+  .reality-table .num {
+    text-align: right;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .reality-table .in  { color: var(--green); }
+  .reality-table .out { color: var(--red); }
+  .reality-table tfoot td {
+    border-top: 2px solid var(--ink);
+    border-bottom: none;
+    font-weight: 700;
+    padding-top: 8px;
+  }
+  .reality-note {
+    font-size: 10px;
+    color: var(--gray);
+    margin-top: 8px;
+    line-height: 1.5;
+  }
+
   .tx-del-btn {
     background: none;
     border: none;
@@ -1476,7 +1609,15 @@
   <!-- ANNUAL / 年間予測                 -->
   <!-- ════════════════════════════════ -->
   <section class="panel" id="panel-annual">
-    <h2 class="section-title">年間の収支予測 <span class="section-title-en">12-Month View</span></h2>
+    <h2 class="section-title">実績レビュー <span class="section-title-en">Reality Check</span></h2>
+    <p class="section-desc">記録した数字だけで「本当に回っているか」を見ます。予算ではなく実績です。</p>
+    <div id="realityCheck"></div>
+
+    <h2 class="section-title" style="margin-top:24px;">予算 vs 実績 <span class="section-title-en">Budget Accuracy</span></h2>
+    <p class="section-desc">ズレの大きいカテゴリ順。予算が現実に合っているかの答え合わせ。</p>
+    <div id="budgetAccuracy"></div>
+
+    <h2 class="section-title" style="margin-top:24px;">年間の収支予測 <span class="section-title-en">12-Month View</span></h2>
     <p class="section-desc">予測(計画)と実績(記録された数字)を月ごとに並べます。</p>
 
     <div class="annual-card">
@@ -1547,31 +1688,39 @@
   <!-- ASSETS / 資産・履歴                -->
   <!-- ════════════════════════════════ -->
   <section class="panel" id="panel-accounts">
-    <h2 class="section-title">口座・カード <span class="section-title-en">Accounts</span></h2>
-
-    <div class="accounts-list" id="accountsList"></div>
-
-    <div class="btn-row">
-      <button class="ghost-btn" id="btnAddAccount">+ 口座・カードを追加</button>
+    <!-- サブタブ: 口座 / 履歴 (履歴が下に埋もれないよう切替式にする) -->
+    <div class="subtab-bar" id="assetSubtabs">
+      <button class="subtab-btn active" data-sub="accounts">口座・カード</button>
+      <button class="subtab-btn" data-sub="history">取引履歴</button>
     </div>
 
-    <h2 class="section-title" style="margin-top:24px;">取引履歴 <span class="section-title-en">Transactions</span></h2>
+    <div id="sub-accounts">
+      <div class="accounts-list" id="accountsList"></div>
 
-    <div class="filter-bar">
-      <select id="filterMonth"></select>
-      <select id="filterType">
-        <option value="">すべて</option>
-        <option value="expense">支出</option>
-        <option value="income">収入</option>
-        <option value="transfer">振替</option>
-        <option value="payment">カード支払</option>
-      </select>
-    </div>
-    <div class="filter-bar">
-      <input type="search" id="filterSearch" placeholder="メモを検索…">
+      <div class="btn-row">
+        <button class="ghost-btn" id="btnAddAccount">+ 口座・カードを追加</button>
+      </div>
     </div>
 
-    <div class="tx-cards" id="txCards"></div>
+    <div id="sub-history" class="hidden">
+      <div class="filter-bar">
+        <select id="filterMonth"></select>
+        <select id="filterType">
+          <option value="">すべて</option>
+          <option value="expense">支出</option>
+          <option value="income">収入</option>
+          <option value="transfer">振替</option>
+          <option value="payment">カード支払</option>
+        </select>
+      </div>
+      <div class="filter-bar">
+        <input type="search" id="filterSearch" placeholder="メモを検索…">
+      </div>
+
+      <div id="histSummary"></div>
+      <div class="tx-cards" id="txCards"></div>
+      <button class="ghost-btn hidden" id="btnMoreTx" style="margin-top:10px;">もっと見る</button>
+    </div>
   </section>
 
   <!-- ════════════════════════════════ -->
@@ -1641,6 +1790,13 @@
         <input type="text" id="settingCategories" style="font-family: 'Noto Sans JP', sans-serif; font-size: 13px;">
       </div>
       <button class="ghost-btn" id="btnSaveCategories" style="margin-top: 8px;">保存</button>
+    </div>
+
+    <!-- カテゴリの付け替え(旧カテゴリの記録を新カテゴリへ移す) -->
+    <div class="settings-section">
+      <h3>カテゴリの付け替え</h3>
+      <p class="setting-desc">過去の記録のカテゴリをまとめて変更します。カテゴリ名を変えた後の移行に使います。</p>
+      <div id="remapArea"></div>
     </div>
 
     <!-- データのインポート/エクスポート -->
@@ -1984,28 +2140,30 @@ const DEFAULT_DATA = {
   transactions: [],
   categories: DEFAULT_CATEGORIES,
   // カテゴリ別月予算(ホーム画面の進捗バー用)
+  // 2026/05-07 の実績3ヶ月平均をもとに設定。
+  // 固定費134,464 + 変動費44,000 で定期収入178,441 に収まる配分。
   budgets: {
-    '食料品・スーパー': 5000,
-    '外食・弁当': 10000,
+    '食料品・スーパー': 4000,
+    '外食・弁当': 3500,
     'コンビニ・間食': 2000,
-    '飲み会・食事会': 30000,
-    '日用品': 4000,
-    '交通費': 10000,
-    '光熱費': 5000,
+    '飲み会・食事会': 12000,
+    '日用品': 3600,
+    '交通費': 8000,
+    '光熱費': 6000,
     '通信費': 6000,
-    '医療・健康': 2000,
-    '趣味・レジャー': 12000,
-    '本・教養': 3000,
-    'タバコ': 2000,
-    '衣服・美容': 5000,
-    '贈り物・お土産': 5000,
+    '医療・健康': 1000,
+    '趣味・レジャー': 4000,
+    '本・教養': 2000,
+    'タバコ': 1200,
+    '衣服・美容': 2000,
+    '贈り物・お土産': 3000,
     '保険': 8000,
-    'サブスク': 2400,
+    'サブスク': 14600,
     '家賃・送金': 60000,
-    '税金': 20000,
-    '奨学金': 33936,
-    '仕事関連': 3000,
-    'その他': 3000,
+    '税金': 19800,
+    '奨学金': 34000,
+    '仕事関連': 1000,
+    'その他': 2000,
   },
   // 月別予測収入(yyyy-mm: 円)
   monthlyIncomes: {},
@@ -2014,14 +2172,16 @@ const DEFAULT_DATA = {
     { id: 'e1', name: '冠婚葬祭備え', amount: 150000, date: '2027-03-31', saved: 0 },
   ],
   // 固定費の月間見込み額(未払いでも予算から先引きされる)
+  // 2026/05-07 の実績から: 奨学金34,000 / サブスクはギター分割14,600 /
+  // 税金は台東区住民税59,500(年4期)を月割り
   fixedExpenses: {
-    '光熱費': 5000,
+    '光熱費': 6000,
     '通信費': 6000,
     '保険': 8000,
-    '奨学金': 33936,
-    'サブスク': 2400,
+    '奨学金': 34000,
+    'サブスク': 14600,
     '家賃・送金': 60000,
-    '税金': 20000,
+    '税金': 19800,
   },
   // 設定
   config: {
@@ -2620,7 +2780,206 @@ function renderQuickTx() {
 }
 
 // ── ANNUAL ────────────────────────────
+// 実績レビュー: 記録済みの取引だけから「今のペースで回るか」を出す。
+// 完了した月(今月より前)のみを対象にする — 進行中の月を混ぜると平均が過小になるため。
+function getCompletedMonthStats() {
+  const nowYm = ymStr(todayStr());
+  const byMonth = {};
+  for (const tx of DATA.transactions) {
+    const ym = ymStr(tx.date);
+    if (ym >= nowYm) continue;
+    if (tx.type !== 'income' && tx.type !== 'expense') continue;
+    const m = byMonth[ym] = byMonth[ym] || { income: 0, expense: 0 };
+    if (tx.type === 'income') m.income += Number(tx.amount);
+    else m.expense += Number(tx.amount);
+  }
+  return Object.entries(byMonth).sort((a, b) => a[0].localeCompare(b[0]));
+}
+
+// 毎月続く見込みの収入を実績から推定する。
+// 「同じ金額が2ヶ月以上に登場する」収入を定期収入とみなし、それ以外
+// (退職金・賞与・単発の業務委託料)は臨時収入として将来の当てにしない。
+// 月の合計収入の最小値を使う方法だと、たまたま全月に臨時収入があった時に
+// 過大評価してしまうため、金額の反復パターンで判定する。
+function getRecurringIncome() {
+  const nowYm = ymStr(todayStr());
+  const monthsByAmount = {};
+  const allMonths = new Set();
+  for (const tx of DATA.transactions) {
+    if (tx.type !== 'income') continue;
+    const ym = ymStr(tx.date);
+    if (ym >= nowYm) continue;
+    allMonths.add(ym);
+    const amt = Number(tx.amount);
+    (monthsByAmount[amt] = monthsByAmount[amt] || new Set()).add(ym);
+  }
+  if (allMonths.size === 0) return { amount: 0, sources: [] };
+
+  // 2ヶ月以上に登場した金額 = 定期収入
+  const recurringAmounts = Object.entries(monthsByAmount)
+    .filter(([, months]) => months.size >= 2)
+    .map(([amt]) => Number(amt));
+
+  // 各月の「定期収入だけの合計」を出し、その最小値を毎月の見込みとする
+  const perMonth = {};
+  const sources = new Map();
+  for (const tx of DATA.transactions) {
+    if (tx.type !== 'income') continue;
+    const ym = ymStr(tx.date);
+    if (ym >= nowYm) continue;
+    const amt = Number(tx.amount);
+    if (!recurringAmounts.includes(amt)) continue;
+    perMonth[ym] = (perMonth[ym] || 0) + amt;
+    if (!sources.has(amt)) sources.set(amt, tx.memo || '(メモなし)');
+  }
+  const monthlySums = [...allMonths].map(m => perMonth[m] || 0);
+  return {
+    amount: Math.min(...monthlySums),
+    sources: [...sources.entries()].map(([amount, memo]) => ({ amount, memo })),
+  };
+}
+
+function renderRealityCheck() {
+  const el = document.getElementById('realityCheck');
+  if (!el) return;
+  const months = getCompletedMonthStats();
+  if (months.length === 0) {
+    el.innerHTML = `<div class="help-card">完了した月のデータがまだありません。記録が1ヶ月分たまると表示されます。</div>`;
+    document.getElementById('budgetAccuracy').innerHTML = '';
+    return;
+  }
+
+  const recent = months.slice(-3);
+  const avgIncome = Math.round(recent.reduce((s, [, m]) => s + m.income, 0) / recent.length);
+  const avgExpense = Math.round(recent.reduce((s, [, m]) => s + m.expense, 0) / recent.length);
+  const rec = getRecurringIncome();
+  const recurring = rec.amount;
+  const gapNow = avgIncome - avgExpense;
+  const gapRecurring = recurring - avgExpense;
+  const oneOff = avgIncome - recurring;
+
+  const rows = months.map(([ym, m]) => {
+    const net = m.income - m.expense;
+    return `
+      <tr>
+        <td>${ym.replace('-', '/')}</td>
+        <td class="num in">${fmtYen(m.income)}</td>
+        <td class="num out">${fmtYen(m.expense)}</td>
+        <td class="num ${net >= 0 ? 'in' : 'out'}"><b>${net >= 0 ? '+' : ''}${fmtYen(net)}</b></td>
+      </tr>`;
+  }).join('');
+
+  // 定期収入だけで回らない場合、貯金が何ヶ月もつか
+  const liquid = DATA.accounts
+    .filter(a => a.type === 'cash' || a.type === 'bank' || a.type === 'savings')
+    .reduce((s, a) => s + getAccountBalance(a.id), 0);
+  const runway = (gapRecurring < 0 && liquid > 0) ? Math.floor(liquid / -gapRecurring) : null;
+
+  const sourceNote = rec.sources.length > 0
+    ? `<div class="verdict-sources">定期収入とみなした記録: ${rec.sources
+        .map(s => `${escapeHtml(s.memo)} ${fmtYen(s.amount)}`).join(' / ')}</div>`
+    : '';
+  const oneOffNote = oneOff > recurring * 0.15
+    ? `<br>直近の平均収入 ${fmtYen(avgIncome)} のうち <b>${fmtYen(oneOff)}</b> は賞与や単発の入金です。これは毎月は入りません。`
+    : '';
+
+  let verdict;
+  if (gapRecurring >= 0) {
+    verdict = `
+      <div class="verdict ok">
+        <div class="verdict-head">✓ 定期収入だけで回っています</div>
+        <div class="verdict-body">
+          毎月続く見込みの収入 <b>${fmtYen(recurring)}</b> に対し、直近${recent.length}ヶ月の平均支出は <b>${fmtYen(avgExpense)}</b>。
+          月 <b>${fmtYen(gapRecurring)}</b> の余力があります。${oneOffNote}
+        </div>
+        ${sourceNote}
+      </div>`;
+  } else {
+    verdict = `
+      <div class="verdict bad">
+        <div class="verdict-head">⚠️ 定期収入だけでは月 ${fmtYen(-gapRecurring)} 足りません</div>
+        <div class="verdict-body">
+          毎月続く見込みの収入は <b>${fmtYen(recurring)}</b>。
+          直近${recent.length}ヶ月の平均支出 <b>${fmtYen(avgExpense)}</b> がこのまま続くと赤字です。${oneOffNote}
+          ${runway !== null ? `<br>今の現金・預金 ${fmtYen(liquid)} だと <b>約${runway}ヶ月</b>でゼロになる計算です。` : ''}
+        </div>
+        ${sourceNote}
+      </div>`;
+  }
+
+  el.innerHTML = `
+    ${verdict}
+    <div class="reality-card">
+      <table class="reality-table">
+        <thead><tr><th>月</th><th class="num">収入</th><th class="num">支出</th><th class="num">差引</th></tr></thead>
+        <tbody>${rows}</tbody>
+        <tfoot><tr>
+          <td>直近${recent.length}ヶ月平均</td>
+          <td class="num in">${fmtYen(avgIncome)}</td>
+          <td class="num out">${fmtYen(avgExpense)}</td>
+          <td class="num ${gapNow >= 0 ? 'in' : 'out'}"><b>${gapNow >= 0 ? '+' : ''}${fmtYen(gapNow)}</b></td>
+        </tr></tfoot>
+      </table>
+      <div class="reality-note">※ 進行中の今月は平均に含めていません(月の途中だと少なく見えるため)。</div>
+    </div>`;
+
+  renderBudgetAccuracy(recent.map(([ym]) => ym));
+}
+
+// 予算 vs 実績月平均。ズレの大きい順に並べ、予算の作り直しを助ける。
+function renderBudgetAccuracy(monthKeys) {
+  const el = document.getElementById('budgetAccuracy');
+  if (!el) return;
+  const spent = {};
+  for (const tx of DATA.transactions) {
+    if (tx.type !== 'expense') continue;
+    if (!monthKeys.includes(ymStr(tx.date))) continue;
+    const c = tx.category || 'その他';
+    spent[c] = (spent[c] || 0) + Number(tx.amount);
+  }
+  const cats = new Set([...Object.keys(spent), ...Object.keys(DATA.budgets)]);
+  const rows = [...cats].map(c => {
+    const actual = Math.round((spent[c] || 0) / monthKeys.length);
+    const budget = Number(DATA.budgets[c] || 0);
+    return { cat: c, actual, budget, diff: actual - budget };
+  }).filter(r => r.actual > 0 || r.budget > 0)
+    .sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
+
+  if (rows.length === 0) { el.innerHTML = ''; return; }
+
+  el.innerHTML = `
+    <div class="reality-card">
+      <table class="reality-table">
+        <thead><tr><th>カテゴリ</th><th class="num">実績/月</th><th class="num">予算</th><th class="num">差</th></tr></thead>
+        <tbody>${rows.map(r => `
+          <tr>
+            <td>${escapeHtml(r.cat)}</td>
+            <td class="num">${fmtYen(r.actual)}</td>
+            <td class="num" style="color:var(--gray)">${r.budget > 0 ? fmtYen(r.budget) : '—'}</td>
+            <td class="num ${r.diff > 0 ? 'out' : 'in'}">${r.diff > 0 ? '+' : ''}${fmtYen(r.diff)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+      <div class="reality-note">「差」がプラス = 予算オーバー。</div>
+      <button type="button" class="ghost-btn" id="btnAdoptActuals" style="margin-top:10px;">実績を予算に取り込む(${monthKeys.length}ヶ月平均)</button>
+    </div>`;
+
+  document.getElementById('btnAdoptActuals').addEventListener('click', () => {
+    const changed = rows.filter(r => r.actual > 0 && r.actual !== r.budget);
+    if (changed.length === 0) { alert('予算はすでに実績どおりです'); return; }
+    const preview = changed.slice(0, 8)
+      .map(r => `・${r.cat}: ${fmtYen(r.budget)} → ${fmtYen(r.actual)}`).join('\n');
+    const more = changed.length > 8 ? `\n…ほか${changed.length - 8}件` : '';
+    if (!confirm(`${changed.length}件のカテゴリの予算を直近${monthKeys.length}ヶ月の実績平均に置き換えます。\n\n${preview}${more}\n\nよろしいですか?`)) return;
+    for (const r of changed) DATA.budgets[r.cat] = r.actual;
+    saveData();
+    renderAll();
+    alert('予算を実績に合わせました。ホームの数字も更新されます。');
+  });
+}
+
 function renderAnnual() {
+  renderRealityCheck();
   const tbl = document.getElementById('annualTable');
   const today = new Date();
   const months = [];
@@ -2963,6 +3322,38 @@ function renderHistoryFilters() {
     sortedMonths.map(m => `<option value="${m}">${m}</option>`).join('');
 }
 
+// 履歴の表示件数。スマホで全件描画すると数万pxになりスクロールが破綻するため区切る
+const HIST_PAGE_SIZE = 30;
+let histShown = HIST_PAGE_SIZE;
+let histDupOnly = false;
+
+// 同日・同額・同種別のペアを重複候補として拾う（二重記録の検出用）
+function findDuplicateIds(txs) {
+  const buckets = {};
+  for (const tx of txs) {
+    const key = `${tx.date}|${tx.amount}|${tx.type}`;
+    (buckets[key] = buckets[key] || []).push(tx);
+  }
+  const ids = new Set();
+  const norm = s => (s || '').replace(/\s+/g, '');
+  for (const group of Object.values(buckets)) {
+    if (group.length < 2) continue;
+    for (let i = 0; i < group.length; i++) {
+      for (let j = i + 1; j < group.length; j++) {
+        const a = norm(group[i].memo), b = norm(group[j].memo);
+        // メモがほぼ同じなら重複候補。
+        // メモが違っても高額(1万円以上)の一致は偶然が考えにくいので候補に含める
+        // (弁当500円やガソリン2000円が同日に2件あるのは普通なので拾わない)
+        const similar = !a || !b || a === b || a.startsWith(b) || b.startsWith(a);
+        if (similar || Number(group[i].amount) >= 10000) {
+          ids.add(group[i].id); ids.add(group[j].id);
+        }
+      }
+    }
+  }
+  return ids;
+}
+
 function renderHistory() {
   const cards = document.getElementById('txCards');
   const filterMonth = document.getElementById('filterMonth').value;
@@ -2974,12 +3365,57 @@ function renderHistory() {
   if (filterType) txs = txs.filter(tx => tx.type === filterType);
   if (filterSearch) txs = txs.filter(tx => (tx.memo||'').toLowerCase().includes(filterSearch));
 
+  const summary = document.getElementById('histSummary');
+  const moreBtn = document.getElementById('btnMoreTx');
+
+  // 重複だけに絞る表示(掃除用)。絞り込み前の集合で判定する
+  const dupIdsAll = findDuplicateIds(txs);
+  if (histDupOnly) txs = txs.filter(tx => dupIdsAll.has(tx.id));
+
   if (txs.length === 0) {
-    cards.innerHTML = `<div class="tx-empty">取引がまだありません。<br>「+ 記録」から始めましょう。</div>`;
+    cards.innerHTML = `<div class="tx-empty">該当する取引がありません。</div>`;
+    if (summary) summary.innerHTML = '';
+    if (moreBtn) moreBtn.classList.add('hidden');
     return;
   }
 
-  cards.innerHTML = txs.map(tx => {
+  // 絞り込み結果の収支サマリ
+  const inc = txs.filter(t => t.type === 'income').reduce((s,t) => s + Number(t.amount), 0);
+  const exp = txs.filter(t => t.type === 'expense').reduce((s,t) => s + Number(t.amount), 0);
+  const dupIds = dupIdsAll;
+  if (summary) {
+    const dupNote = dupIds.size > 0
+      ? `<div class="hist-dup-note">
+           ⚠️ 同じ日・同じ金額の記録が ${dupIds.size} 件あります。二重記録かもしれません。
+           <button type="button" class="dup-filter-btn" id="btnDupOnly">${histDupOnly ? 'すべて表示に戻す' : 'この' + dupIds.size + '件だけ表示'}</button>
+         </div>`
+      : '';
+    summary.innerHTML = `
+      <div class="hist-summary">
+        <span>${txs.length}件</span>
+        <span class="hs-in">収入 ${fmtYen(inc)}</span>
+        <span class="hs-out">支出 ${fmtYen(exp)}</span>
+        <span class="hs-net">差引 ${inc - exp >= 0 ? '+' : ''}${fmtYen(inc - exp)}</span>
+      </div>${dupNote}`;
+    const dupBtn = document.getElementById('btnDupOnly');
+    if (dupBtn) dupBtn.addEventListener('click', () => {
+      histDupOnly = !histDupOnly;
+      histShown = HIST_PAGE_SIZE;
+      renderHistory();
+    });
+  }
+
+  const visible = txs.slice(0, histShown);
+  if (moreBtn) {
+    if (txs.length > visible.length) {
+      moreBtn.classList.remove('hidden');
+      moreBtn.textContent = `もっと見る(残り${txs.length - visible.length}件)`;
+    } else {
+      moreBtn.classList.add('hidden');
+    }
+  }
+
+  cards.innerHTML = visible.map(tx => {
     const acct = DATA.accounts.find(a => a.id === tx.account);
     const acctTo = DATA.accounts.find(a => a.id === tx.accountTo);
     let amtClass = 'expense', sign = '−';
@@ -2995,9 +3431,9 @@ function renderHistory() {
     const acctText = acctTo ? `${acct?.name||'?'} → ${acctTo?.name||'?'}` : (acct?.name || '?');
 
     return `
-      <div class="tx-card">
+      <div class="tx-card${dupIds.has(tx.id) ? ' dup' : ''}">
         <div class="tx-card-left">
-          <div class="tx-card-date">${fmtDate(tx.date)}</div>
+          <div class="tx-card-date">${fmtDate(tx.date)}${dupIds.has(tx.id) ? ' <span class="dup-badge">重複?</span>' : ''}</div>
           <div class="tx-card-memo">${escapeHtml(tx.memo || '(メモなし)')}</div>
           <div class="tx-card-meta">
             ${typeTag}
@@ -3079,7 +3515,61 @@ function renderAccounts() {
 }
 
 // ── SETTINGS ──────────────────────────
+// カテゴリの付け替え。現在のカテゴリ一覧に無い名前(＝旧カテゴリ)を優先して並べる。
+function renderRemap() {
+  const el = document.getElementById('remapArea');
+  if (!el) return;
+  const counts = {};
+  for (const tx of DATA.transactions) {
+    if (tx.type !== 'expense') continue;
+    const c = tx.category || '(未分類)';
+    counts[c] = (counts[c] || 0) + 1;
+  }
+  const used = Object.keys(counts).sort((a, b) => {
+    const aOld = !DATA.categories.includes(a), bOld = !DATA.categories.includes(b);
+    if (aOld !== bOld) return aOld ? -1 : 1;
+    return counts[b] - counts[a];
+  });
+
+  if (used.length === 0) {
+    el.innerHTML = `<p class="setting-desc">支出の記録がまだありません。</p>`;
+    return;
+  }
+
+  const options = DATA.categories.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+  el.innerHTML = `
+    <div class="field">
+      <label>変更元(この カテゴリの記録すべて)</label>
+      <select id="remapFrom" style="font-size:14px;padding:8px;">
+        ${used.map(c => {
+          const isOld = !DATA.categories.includes(c);
+          return `<option value="${escapeHtml(c)}">${escapeHtml(c)} (${counts[c]}件)${isOld ? ' ← 旧' : ''}</option>`;
+        }).join('')}
+      </select>
+    </div>
+    <div class="field">
+      <label>変更先</label>
+      <select id="remapTo" style="font-size:14px;padding:8px;">${options}</select>
+    </div>
+    <button class="ghost-btn" id="btnRemap" style="margin-top:8px;">この付け替えを実行</button>`;
+
+  document.getElementById('btnRemap').addEventListener('click', () => {
+    const from = document.getElementById('remapFrom').value;
+    const to = document.getElementById('remapTo').value;
+    if (from === to) { alert('変更元と変更先が同じです'); return; }
+    const n = DATA.transactions.filter(tx => tx.type === 'expense' && (tx.category || '(未分類)') === from).length;
+    if (!confirm(`「${from}」の記録 ${n}件 を「${to}」に付け替えます。よろしいですか?`)) return;
+    for (const tx of DATA.transactions) {
+      if (tx.type === 'expense' && (tx.category || '(未分類)') === from) tx.category = to;
+    }
+    saveData();
+    renderAll();
+    alert(`${n}件を「${to}」に付け替えました。`);
+  });
+}
+
 function renderSettings() {
+  renderRemap();
   // 月別収入予測グリッド
   const grid = document.getElementById('monthIncomesGrid');
   const today = new Date();
@@ -3312,9 +3802,31 @@ document.getElementById('eventDelete').addEventListener('click', () => {
   renderAll();
 });
 
-// フィルタ
+// フィルタ(条件を変えたら先頭ページに戻す)
 ['filterMonth','filterType','filterSearch'].forEach(id => {
-  document.getElementById(id).addEventListener('input', renderHistory);
+  document.getElementById(id).addEventListener('input', () => {
+    histShown = HIST_PAGE_SIZE;
+    histDupOnly = false;
+    renderHistory();
+  });
+});
+
+document.getElementById('btnMoreTx').addEventListener('click', () => {
+  histShown += HIST_PAGE_SIZE;
+  renderHistory();
+});
+
+// 資産タブのサブタブ切替(口座 / 履歴)
+document.querySelectorAll('#assetSubtabs .subtab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#assetSubtabs .subtab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const isHistory = btn.dataset.sub === 'history';
+    document.getElementById('sub-accounts').classList.toggle('hidden', isHistory);
+    document.getElementById('sub-history').classList.toggle('hidden', !isHistory);
+    if (isHistory) { histShown = HIST_PAGE_SIZE; renderHistory(); }
+    window.scrollTo(0, 0);
+  });
 });
 
 // 設定保存
@@ -3433,8 +3945,8 @@ document.getElementById('btnDownloadSetup').addEventListener('click', () => {
     ],
     transactions: [],
     categories: ['食料品・スーパー','外食・弁当','コンビニ・間食','飲み会・食事会','日用品','交通費','光熱費','通信費','医療・健康','趣味・レジャー','本・教養','タバコ','衣服・美容','贈り物・お土産','保険','サブスク','家賃・送金','税金','奨学金','仕事関連','その他'],
-    budgets: {食料品・スーパー:5000,外食・弁当:10000,コンビニ・間食:2000,飲み会・食事会:30000,日用品:4000,交通費:10000,光熱費:5000,通信費:6000,医療・健康:2000,趣味・レジャー:12000,本・教養:3000,タバコ:2000,衣服・美容:5000,贈り物・お土産:5000,保険:8000,サブスク:2400,家賃・送金:60000,税金:20000,奨学金:33936,仕事関連:3000,その他:3000},
-    fixedExpenses: {光熱費:5000,通信費:6000,保険:8000,奨学金:33936,サブスク:2400,家賃・送金:60000,税金:20000},
+    budgets: {食料品・スーパー:4000,外食・弁当:3500,コンビニ・間食:2000,飲み会・食事会:12000,日用品:3600,交通費:8000,光熱費:6000,通信費:6000,医療・健康:1000,趣味・レジャー:4000,本・教養:2000,タバコ:1200,衣服・美容:2000,贈り物・お土産:3000,保険:8000,サブスク:14600,家賃・送金:60000,税金:19800,奨学金:34000,仕事関連:1000,その他:2000},
+    fixedExpenses: {光熱費:6000,通信費:6000,保険:8000,奨学金:34000,サブスク:14600,家賃・送金:60000,税金:19800},
     monthlyIncomes: {},
     events: [{id:'e1',name:'冠婚葬祭備え',amount:150000,date:'2027-03-31',saved:0}],
     config: {
