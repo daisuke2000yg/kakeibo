@@ -217,11 +217,12 @@
   .bottom-nav::-webkit-scrollbar { display: none; }
 
   .nav-btn {
-    flex: 0 0 auto;
-    min-width: 56px;
+    /* 7項目を横スクロールなしで収める(はみ出すと最後のタブに気づけない) */
+    flex: 1 1 0;
+    min-width: 0;
     background: none;
     border: none;
-    padding: 10px 6px;
+    padding: 10px 2px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -994,29 +995,6 @@
   .tx-amt.income { color: var(--green); }
   .tx-amt.expense { color: var(--red); }
   .tx-amt.transfer { color: var(--gray); }
-
-  /* サブタブ(資産タブ内の 口座/履歴 切替) */
-  .subtab-bar {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0;
-    margin-bottom: 14px;
-    border: 1px solid var(--ink);
-  }
-  .subtab-btn {
-    padding: 11px 8px;
-    background: var(--paper);
-    border: none;
-    font-family: 'Noto Sans JP', sans-serif;
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--gray);
-    cursor: pointer;
-  }
-  .subtab-btn.active {
-    background: var(--ink);
-    color: var(--paper);
-  }
 
   /* 履歴の絞り込みサマリ */
   .hist-summary {
@@ -1848,38 +1826,38 @@
   <!-- ════════════════════════════════ -->
   <section class="panel" id="panel-accounts">
     <!-- サブタブ: 口座 / 履歴 (履歴が下に埋もれないよう切替式にする) -->
-    <div class="subtab-bar" id="assetSubtabs">
-      <button class="subtab-btn active" data-sub="accounts">口座・カード</button>
-      <button class="subtab-btn" data-sub="history">取引履歴</button>
+    <h2 class="section-title">口座・カード <span class="section-title-en">Accounts</span></h2>
+
+    <div class="accounts-list" id="accountsList"></div>
+
+    <div class="btn-row">
+      <button class="ghost-btn" id="btnAddAccount">+ 口座・カードを追加</button>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════ -->
+  <!-- HISTORY / 取引履歴                 -->
+  <!-- ════════════════════════════════ -->
+  <section class="panel" id="panel-history">
+    <h2 class="section-title">取引履歴 <span class="section-title-en">Transactions</span></h2>
+
+    <div class="filter-bar">
+      <select id="filterMonth"></select>
+      <select id="filterType">
+        <option value="">すべて</option>
+        <option value="expense">支出</option>
+        <option value="income">収入</option>
+        <option value="transfer">振替</option>
+        <option value="payment">カード支払</option>
+      </select>
+    </div>
+    <div class="filter-bar">
+      <input type="search" id="filterSearch" placeholder="メモを検索…">
     </div>
 
-    <div id="sub-accounts">
-      <div class="accounts-list" id="accountsList"></div>
-
-      <div class="btn-row">
-        <button class="ghost-btn" id="btnAddAccount">+ 口座・カードを追加</button>
-      </div>
-    </div>
-
-    <div id="sub-history" class="hidden">
-      <div class="filter-bar">
-        <select id="filterMonth"></select>
-        <select id="filterType">
-          <option value="">すべて</option>
-          <option value="expense">支出</option>
-          <option value="income">収入</option>
-          <option value="transfer">振替</option>
-          <option value="payment">カード支払</option>
-        </select>
-      </div>
-      <div class="filter-bar">
-        <input type="search" id="filterSearch" placeholder="メモを検索…">
-      </div>
-
-      <div id="histSummary"></div>
-      <div class="tx-cards" id="txCards"></div>
-      <button class="ghost-btn hidden" id="btnMoreTx" style="margin-top:10px;">もっと見る</button>
-    </div>
+    <div id="histSummary"></div>
+    <div class="tx-cards" id="txCards"></div>
+    <button class="ghost-btn hidden" id="btnMoreTx" style="margin-top:10px;">もっと見る</button>
   </section>
 
   <!-- ════════════════════════════════ -->
@@ -2010,6 +1988,10 @@
   <button class="nav-btn" data-panel="record">
     <span class="icon">+</span>
     <span class="lbl">記録</span>
+  </button>
+  <button class="nav-btn" data-panel="history">
+    <span class="icon">≡</span>
+    <span class="lbl">履歴</span>
   </button>
   <button class="nav-btn" data-panel="debt">
     <span class="icon">▼</span>
@@ -4218,6 +4200,8 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('panel-' + btn.dataset.panel).classList.add('active');
+    // 履歴を開き直したら先頭ページから
+    if (btn.dataset.panel === 'history') { histShown = HIST_PAGE_SIZE; renderHistory(); }
     window.scrollTo(0, 0);
   });
 });
@@ -4369,18 +4353,6 @@ document.getElementById('btnMoreTx').addEventListener('click', () => {
   renderHistory();
 });
 
-// 資産タブのサブタブ切替(口座 / 履歴)
-document.querySelectorAll('#assetSubtabs .subtab-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('#assetSubtabs .subtab-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    const isHistory = btn.dataset.sub === 'history';
-    document.getElementById('sub-accounts').classList.toggle('hidden', isHistory);
-    document.getElementById('sub-history').classList.toggle('hidden', !isHistory);
-    if (isHistory) { histShown = HIST_PAGE_SIZE; renderHistory(); }
-    window.scrollTo(0, 0);
-  });
-});
 
 // 設定保存
 document.getElementById('btnSaveIncomes').addEventListener('click', () => {
