@@ -1059,6 +1059,89 @@
     font-weight: 700;
   }
 
+  /* やりくりプラン */
+  .plan-card {
+    background: var(--paper-deep);
+    border: 1px solid var(--ink);
+    padding: 14px;
+  }
+  .plan-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    padding: 7px 0;
+  }
+  .plan-line.head { font-weight: 700; }
+  .plan-line.total {
+    border-top: 1px solid var(--gray-soft);
+    font-weight: 700;
+    margin-top: 4px;
+  }
+  .plan-line.result {
+    border-top: 2px solid var(--ink);
+    margin-top: 6px;
+    padding-top: 10px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .plan-amt {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .plan-amt input, .plan-input {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 5px 7px;
+    border: 1px solid var(--gray-soft);
+    background: var(--paper);
+    color: var(--ink);
+    text-align: right;
+    width: 105px;
+  }
+  .plan-bad { color: var(--accent); }
+  .plan-ok  { color: var(--green); }
+  .plan-section-label {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: var(--gray);
+    font-weight: 700;
+    margin: 14px 0 6px;
+    border-bottom: 1px solid var(--gray-soft);
+    padding-bottom: 4px;
+  }
+  .plan-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 4px 10px;
+    align-items: center;
+    padding: 6px 0;
+  }
+  .plan-row.sub .plan-label { color: var(--gray); font-size: 11px; }
+  .plan-row.sub { padding: 4px 0; }
+  .plan-row.sub .plan-input { width: 105px; font-size: 12px; padding: 4px 6px; }
+  .plan-label { font-size: 12px; }
+  .plan-actual {
+    grid-column: 1 / -1;
+    text-align: right;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--gray);
+  }
+  .plan-cut { color: var(--green); }
+  .plan-up  { color: var(--accent); }
+  .plan-verdict {
+    font-size: 11px;
+    line-height: 1.6;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--gray-soft);
+  }
+  .plan-verdict b { font-family: 'JetBrains Mono', monospace; }
+
   /* 実績レビュー */
   .verdict {
     padding: 14px;
@@ -1681,7 +1764,11 @@
   <!-- ANNUAL / 年間予測                 -->
   <!-- ════════════════════════════════ -->
   <section class="panel" id="panel-annual">
-    <h2 class="section-title">実績レビュー <span class="section-title-en">Reality Check</span></h2>
+    <h2 class="section-title">やりくりプラン <span class="section-title-en">Build From Income</span></h2>
+    <p class="section-desc">毎月確実に入るお金から逆算して組み立てます。使った額の記録ではなく、これからの設計図です。</p>
+    <div id="planner"></div>
+
+    <h2 class="section-title" style="margin-top:24px;">実績レビュー <span class="section-title-en">Reality Check</span></h2>
     <p class="section-desc">記録した数字だけで「本当に回っているか」を見ます。予算ではなく実績です。</p>
     <div id="realityCheck"></div>
 
@@ -2282,6 +2369,9 @@ const DEFAULT_DATA = {
   ],
   // { 'YYYY-MM': ['itemId', ...] } 当月は不要と判断した項目
   checklistSkipped: {},
+  // やりくりプラン: 収入から逆算した配分。
+  // incomeOverride が null なら実績から推定した定期収入を使う
+  plan: { incomeOverride: null, allocations: {} },
   // 設定
   config: {
     monthlyDebtTarget: 11000,
@@ -2328,6 +2418,7 @@ function loadData() {
       events: parsed.events || [],
       monthlyChecklist: parsed.monthlyChecklist || DEFAULT_DATA.monthlyChecklist,
       checklistSkipped: parsed.checklistSkipped || {},
+      plan: Object.assign({ incomeOverride: null, allocations: {} }, parsed.plan || {}),
       config: Object.assign({}, DEFAULT_DATA.config, parsed.config || {}),
     };
   } catch(e) {
@@ -2943,7 +3034,209 @@ function getRecurringIncome() {
   };
 }
 
+// ── やりくりプラン ────────────────────────
+// 収入 − 固定費 − 変動費 = リボ返済に回せる額、という順で組み立てる。
+// 支出を足していく方式だと収入を超えたことに気づけないため、
+// 常に「残り」を先に見せて、リボ完済までの月数に直結させる。
+const PLAN_GROUPS = CATEGORY_GROUPS.filter(g => g.key !== 'fixed');
+
+function getPlanIncome() {
+  const ov = DATA.plan?.incomeOverride;
+  if (ov !== null && ov !== undefined && ov !== '') return Number(ov);
+  return getRecurringIncome().amount;
+}
+
+// 直近の完了月から、グループごとの実績月平均を出す(プランの初期値・比較用)
+function getGroupActuals() {
+  const months = getCompletedMonthStats().slice(-3).map(([ym]) => ym);
+  const out = {};
+  for (const g of PLAN_GROUPS) out[g.key] = 0;
+  if (months.length === 0) return { actuals: out, monthCount: 0 };
+  for (const tx of DATA.transactions) {
+    if (tx.type !== 'expense') continue;
+    if (!months.includes(ymStr(tx.date))) continue;
+    const cat = tx.category || 'その他';
+    if (isFixedCategory(cat)) continue;
+    const key = getCategoryGroup(cat);
+    if (out[key] === undefined) continue;
+    out[key] += Number(tx.amount);
+  }
+  for (const k of Object.keys(out)) out[k] = Math.round(out[k] / months.length);
+  return { actuals: out, monthCount: months.length };
+}
+
+function renderPlanner() {
+  const el = document.getElementById('planner');
+  if (!el) return;
+
+  const { actuals, monthCount } = getGroupActuals();
+  const fixedCats = Object.keys(DATA.fixedExpenses || {});
+
+  const riboAccts = DATA.accounts.filter(a => a.type === 'credit' && a.ribo);
+  const riboTotal = riboAccts.reduce((s, a) => s + Math.max(0, getAccountBalance(a.id)), 0);
+
+  const fixedRows = fixedCats.map(c => `
+    <div class="plan-row sub">
+      <label class="plan-label">${escapeHtml(c)}</label>
+      <input type="number" class="plan-input" data-fixed="${escapeHtml(c)}"
+             value="${Number(DATA.fixedExpenses[c] || 0)}" min="0" step="1000" inputmode="numeric">
+    </div>`).join('');
+
+  const varRows = PLAN_GROUPS.map(g => `
+    <div class="plan-row">
+      <label class="plan-label">${g.name}</label>
+      <input type="number" class="plan-input" data-alloc="${g.key}"
+             value="${Number(DATA.plan?.allocations?.[g.key] ?? actuals[g.key] ?? 0)}" min="0" step="1000" inputmode="numeric">
+      <span class="plan-actual" data-actual-for="${g.key}"></span>
+    </div>`).join('');
+
+  el.innerHTML = `
+    <div class="plan-card">
+      <div class="plan-line head">
+        <span>毎月確実に入る収入</span>
+        <span class="plan-amt"><input type="number" id="planIncome" step="1000" inputmode="numeric"
+          value="${getPlanIncome()}"></span>
+      </div>
+
+      <div class="plan-section-label">固定費(毎月ほぼ動かないお金)</div>
+      ${fixedRows || '<div class="reality-note">固定費が未設定です。設定タブで登録できます。</div>'}
+      <div class="plan-line total">
+        <span>固定費 小計</span>
+        <span class="plan-amt" id="planFixedTotal"></span>
+      </div>
+      <div class="plan-line total">
+        <span>= 変動費とリボに使える額</span>
+        <span class="plan-amt" id="planAvail"></span>
+      </div>
+
+      <div class="plan-section-label">変動費の配分${monthCount > 0 ? `(実績は直近${monthCount}ヶ月平均)` : ''}</div>
+      ${varRows}
+      <div class="plan-line total">
+        <span>変動費 小計</span>
+        <span class="plan-amt" id="planVarTotal"></span>
+      </div>
+
+      <div class="plan-line result">
+        <span>= リボ返済に回せる額</span>
+        <span class="plan-amt" id="planForDebt"></span>
+      </div>
+      <div class="plan-verdict" id="planVerdict"></div>
+
+      <div class="btn-row" style="margin-top:12px;">
+        <button type="button" class="ghost-btn" id="btnPlanFromActual">実績をそのまま入れる</button>
+        <button type="button" class="ghost-btn" id="btnPlanToBudget">このプランを予算にする</button>
+      </div>
+      <div class="reality-note">「このプランを予算にする」を押すと、グループ内の各カテゴリに実績の比率で割り振られ、ホームの予算バーに反映されます。</div>
+    </div>`;
+
+  const $ = id => document.getElementById(id);
+
+  // 入力のたびに走る。入力欄そのものは作り直さない
+  // (作り直すと入力途中でフォーカスが飛び、値が1つ前に巻き戻る)
+  function recalc(persist) {
+    const income = Number($('planIncome').value) || 0;
+    let fixedTotal = 0;
+    el.querySelectorAll('[data-fixed]').forEach(inp => {
+      const v = Number(inp.value) || 0;
+      fixedTotal += v;
+      if (persist) DATA.fixedExpenses[inp.dataset.fixed] = v;
+    });
+    let varTotal = 0;
+    el.querySelectorAll('[data-alloc]').forEach(inp => {
+      const key = inp.dataset.alloc;
+      const v = Number(inp.value) || 0;
+      varTotal += v;
+      if (persist) DATA.plan.allocations[key] = v;
+      const a = actuals[key] || 0;
+      const diff = v - a;
+      const span = el.querySelector(`[data-actual-for="${key}"]`);
+      if (span) {
+        span.innerHTML = monthCount > 0
+          ? `実績 ${fmtYen(a)}${diff !== 0 ? ` <span class="${diff < 0 ? 'plan-cut' : 'plan-up'}">${diff < 0 ? '' : '+'}${fmtNum(diff)}</span>` : ''}`
+          : '';
+      }
+    });
+    if (persist) {
+      DATA.plan.incomeOverride = income === getRecurringIncome().amount ? null : income;
+    }
+
+    const avail = income - fixedTotal;
+    const forDebt = avail - varTotal;
+    $('planFixedTotal').textContent = fmtYen(fixedTotal);
+    $('planAvail').textContent = fmtYen(avail);
+    $('planAvail').className = 'plan-amt' + (avail < 0 ? ' plan-bad' : '');
+    $('planVarTotal').textContent = fmtYen(varTotal);
+    $('planVarTotal').className = 'plan-amt' + (varTotal > avail ? ' plan-bad' : '');
+    $('planForDebt').textContent = fmtYen(forDebt);
+    $('planForDebt').className = 'plan-amt' + (forDebt < 0 ? ' plan-bad' : '');
+
+    const apr = Number(DATA.config.debtApr ?? 15);
+    let verdict;
+    if (forDebt < 0) {
+      verdict = `<span class="plan-bad">収入を ${fmtYen(-forDebt)} 超えています。どこかを削るか、収入を増やす必要があります。</span>`;
+    } else if (riboTotal <= 0) {
+      verdict = `<span class="plan-ok">リボ残高なし。この額は貯金に回せます。</span>`;
+    } else {
+      const monthlyInterest = Math.round(riboTotal * apr / 100 / 12);
+      const sim = simulatePayoff(riboTotal, forDebt, apr);
+      verdict = sim.never
+        ? `<span class="plan-bad">この額では利息に負けます。</span> リボ ${fmtYen(riboTotal)} の利息は月 約${fmtYen(monthlyInterest)}。元本を減らすには最低でもこれを超える返済が必要です。`
+        : `<span class="plan-ok">リボ ${fmtYen(riboTotal)} を <b>${sim.months}ヶ月</b>(${getCompletionMonth(sim.months)})で完済</span> · 利息の総額 ${fmtYen(sim.interest)}`;
+    }
+    $('planVerdict').innerHTML = verdict;
+  }
+
+  el.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('input', () => recalc(true));
+    inp.addEventListener('change', () => { recalc(true); saveData(); });
+  });
+
+  $('btnPlanFromActual').addEventListener('click', () => {
+    for (const g of PLAN_GROUPS) DATA.plan.allocations[g.key] = actuals[g.key] || 0;
+    saveData();
+    renderPlanner();
+  });
+
+  $('btnPlanToBudget').addEventListener('click', () => {
+    recalc(true);
+    const income = Number($('planIncome').value) || 0;
+    const fixedTotal = [...el.querySelectorAll('[data-fixed]')].reduce((s, i) => s + (Number(i.value) || 0), 0);
+    const varTotal = [...el.querySelectorAll('[data-alloc]')].reduce((s, i) => s + (Number(i.value) || 0), 0);
+    const forDebt = income - fixedTotal - varTotal;
+    if (forDebt < 0 && !confirm(`このプランは収入を ${fmtYen(-forDebt)} 超えています。それでも予算にしますか?`)) return;
+
+    // グループの配分を、そのグループ内カテゴリの実績比率で割り振る
+    const months = getCompletedMonthStats().slice(-3).map(([ym]) => ym);
+    const catActual = {};
+    for (const tx of DATA.transactions) {
+      if (tx.type !== 'expense' || !months.includes(ymStr(tx.date))) continue;
+      const c = tx.category || 'その他';
+      catActual[c] = (catActual[c] || 0) + Number(tx.amount);
+    }
+    for (const g of PLAN_GROUPS) {
+      const target = Number(DATA.plan.allocations[g.key] ?? actuals[g.key] ?? 0);
+      const cats = g.cats.filter(c => DATA.categories.includes(c));
+      if (cats.length === 0) continue;
+      const sum = cats.reduce((s, c) => s + (catActual[c] || 0), 0);
+      for (const c of cats) {
+        const share = sum > 0 ? (catActual[c] || 0) / sum : 1 / cats.length;
+        DATA.budgets[c] = Math.round(target * share / 100) * 100;
+      }
+    }
+    for (const [c, v] of Object.entries(DATA.fixedExpenses || {})) {
+      if (DATA.categories.includes(c)) DATA.budgets[c] = Number(v || 0);
+    }
+    saveData();
+    renderAll();
+    alert('予算に反映しました。ホームの数字が更新されます。');
+  });
+
+  recalc(false);
+}
+
+
 function renderRealityCheck() {
+  renderPlanner();
   const el = document.getElementById('realityCheck');
   if (!el) return;
   const months = getCompletedMonthStats();
