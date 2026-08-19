@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#23405e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="観光地理">
+<meta name="description" content="国内旅行業務取扱管理者 国内観光地理の地図暗記ツール">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%2323405e'/%3E%3Cg fill='%23e9e5d8'%3E%3Ccircle cx='128' cy='44' r='13'/%3E%3Ccircle cx='118' cy='72' r='11'/%3E%3Ccircle cx='100' cy='96' r='11'/%3E%3Ccircle cx='78' cy='114' r='11'/%3E%3Ccircle cx='54' cy='128' r='10'/%3E%3Ccircle cx='32' cy='142' r='9'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%2323405e'/%3E%3Cg fill='%23e9e5d8'%3E%3Ccircle cx='45' cy='16' r='5'/%3E%3Ccircle cx='41' cy='27' r='4'/%3E%3Ccircle cx='34' cy='36' r='4'/%3E%3Ccircle cx='26' cy='43' r='4'/%3E%3Ccircle cx='17' cy='49' r='3.5'/%3E%3C/g%3E%3C/svg%3E">
+<title>国内観光地理マップ｜旅行業務取扱管理者</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Old+Mincho:wght@400;700;900&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --sumi:#191d23; --ai:#23405e; --ai2:#3a6690;
+  --washi:#e9e5d8; --washi2:#f4f1e8; --line:#cdc6b2; --mute:#6d6857;
+  --c-o:#c05a37; --c-m:#a52e48; --c-p:#2c6b4d; --c-w:#3c56a0;
+  --c-c:#5c4b8b; --c-s:#8a6524; --c-a:#17707d; --c-f:#7a2f5e;
+  --ok:#2c6b4d; --ng:#a52e48;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--washi);color:var(--sumi);
+  font-family:"Zen Kaku Gothic New",system-ui,sans-serif;
+  font-size:15px;line-height:1.72;padding-bottom:48px;
+  background-image:radial-gradient(rgba(120,110,80,.05) 1px,transparent 1px);
+  background-size:4px 4px;
+}
+.wrap{max-width:780px;margin:0 auto;padding:0 14px}
+header{background:var(--ai);color:var(--washi2);padding:16px 0 14px;margin-bottom:12px;border-bottom:3px solid var(--sumi);padding-top:calc(16px + env(safe-area-inset-top))}
+.wrap{padding-left:calc(14px + env(safe-area-inset-left));padding-right:calc(14px + env(safe-area-inset-right))}
+header h1{font-family:"Zen Old Mincho",serif;font-weight:900;font-size:1.42rem;letter-spacing:.14em;margin:0;line-height:1.35}
+header .sub{font-size:.7rem;letter-spacing:.2em;color:#a9bdd2;margin-top:4px}
+
+.tabs{display:flex;border:1.5px solid var(--sumi);border-radius:3px;overflow:hidden;margin-bottom:12px}
+.tabs button{flex:1;border:0;background:var(--washi2);color:var(--mute);font-family:inherit;font-size:.8rem;font-weight:700;letter-spacing:.06em;padding:10px 2px;cursor:pointer;border-right:1px solid var(--line)}
+.tabs button:last-child{border-right:0}
+.tabs button[aria-selected="true"]{background:var(--sumi);color:var(--washi2)}
+
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
+.chip{border:1.5px solid var(--line);background:var(--washi2);border-radius:999px;padding:4px 11px;font-size:.75rem;font-weight:500;font-family:inherit;color:var(--mute);cursor:pointer;display:flex;align-items:center;gap:5px}
+.chip .dot{width:7px;height:7px;border-radius:50%;background:currentColor}
+.chip[aria-pressed="true"]{background:var(--sumi);color:var(--washi2);border-color:var(--sumi)}
+.chip.o[aria-pressed="true"]{background:var(--c-o);border-color:var(--c-o)}
+.chip.m[aria-pressed="true"]{background:var(--c-m);border-color:var(--c-m)}
+.chip.p[aria-pressed="true"]{background:var(--c-p);border-color:var(--c-p)}
+.chip.w[aria-pressed="true"]{background:var(--c-w);border-color:var(--c-w)}
+.chip.c[aria-pressed="true"]{background:var(--c-c);border-color:var(--c-c)}
+.chip.s[aria-pressed="true"]{background:var(--c-s);border-color:var(--c-s)}
+.chip.a[aria-pressed="true"]{background:var(--c-a);border-color:var(--c-a)}
+.chip.f[aria-pressed="true"]{background:var(--c-f);border-color:var(--c-f)}
+.chip.sm{font-size:.72rem;padding:3px 9px}
+
+.toolbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:0 0 8px;font-size:.74rem;color:var(--mute)}
+.toolbar .pg{margin-left:auto;letter-spacing:.08em}
+.toolbar .pg b{font-family:"Zen Old Mincho",serif;font-size:1rem;color:var(--sumi)}
+
+.mapbox{position:relative;width:100%;aspect-ratio:1/1.02;background:var(--washi2);border:1.5px solid var(--sumi);border-radius:4px;container-type:inline-size;overflow:hidden;box-shadow:3px 3px 0 rgba(25,29,35,.13);scroll-margin-top:8px}
+.pref{position:absolute;transform:translate(-50%,-50%);width:10%;height:4.6%;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:2px;background:#fff;color:var(--sumi);font-size:2.9cqw;font-weight:700;letter-spacing:-.02em;cursor:pointer;transition:transform .12s ease;padding:0;font-family:inherit;line-height:1;white-space:nowrap}
+.pref:hover{transform:translate(-50%,-50%) scale(1.15);z-index:5}
+.pref:focus-visible{outline:2px solid var(--ai2);outline-offset:2px;z-index:6}
+.pref.sel{box-shadow:0 0 0 2.5px var(--sumi);z-index:4;transform:translate(-50%,-50%) scale(1.15)}
+.pref.hit{box-shadow:0 0 0 2.5px var(--sumi);z-index:4}
+.pref.dim{opacity:.22}
+.pref.right{color:#fff;background:var(--ok)!important;box-shadow:0 0 0 2.5px var(--ok)}
+.pref.wrong{color:#fff;background:var(--ng)!important;box-shadow:0 0 0 2.5px var(--ng)}
+.pref .mark{position:absolute;top:-2px;right:-2px;width:1.8cqw;height:1.8cqw;border-radius:50%;background:var(--ai);border:.4cqw solid #fff}
+body.blank .pref{color:transparent!important}
+body.blank .pref.sel,body.blank .pref.right,body.blank .pref.wrong,body.blank .pref.hit{color:inherit!important}
+.maplegend{font-size:.7rem;color:var(--mute);letter-spacing:.04em;margin:6px 0 0;display:flex;gap:8px;align-items:flex-start}
+.maplegend button{margin-left:auto;flex-shrink:0;font-family:inherit;font-size:.7rem;border:1px solid var(--line);background:var(--washi2);border-radius:2px;padding:2px 8px;cursor:pointer;color:var(--mute)}
+
+.search{width:100%;padding:10px 12px;font-family:inherit;font-size:.95rem;border:1.5px solid var(--sumi);border-radius:3px;background:var(--washi2);margin:10px 0 4px}
+.search:focus{outline:2px solid var(--ai2);outline-offset:1px}
+
+.panel{background:var(--washi2);border:1.5px solid var(--sumi);border-radius:4px;padding:14px 15px;margin-top:12px;box-shadow:3px 3px 0 rgba(25,29,35,.13)}
+.panel h2{font-family:"Zen Old Mincho",serif;font-size:1.3rem;font-weight:900;margin:0 0 2px;letter-spacing:.1em}
+.panel .region{font-size:.7rem;letter-spacing:.18em;color:var(--mute);margin-bottom:9px}
+.nbr{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px;padding-bottom:11px;border-bottom:1px dashed var(--line)}
+.nbr span{font-size:.68rem;color:var(--mute);align-self:center;letter-spacing:.1em;margin-right:2px}
+.nbr button{font-family:inherit;font-size:.75rem;border:1px solid var(--line);background:#fff;border-radius:2px;padding:2px 9px;cursor:pointer;color:var(--sumi)}
+.nbr button:hover{border-color:var(--sumi)}
+
+.detail{border:1.5px solid var(--sumi);border-left-width:5px;background:#fff;border-radius:3px;padding:11px 13px;margin-bottom:13px}
+.detail .dn{font-family:"Zen Old Mincho",serif;font-size:1.06rem;font-weight:700;letter-spacing:.05em}
+.detail .dc{font-size:.66rem;letter-spacing:.14em;color:#fff;padding:1px 7px;border-radius:2px;margin-left:7px;vertical-align:2px}
+.detail .dnote{font-size:.85rem;margin-top:5px;line-height:1.75}
+.dimg{margin-top:9px;border-radius:3px;overflow:hidden;border:1px solid var(--line);background:var(--washi);position:relative;min-height:0}
+.dimg img{display:block;width:100%;height:170px;object-fit:cover}
+.dimg figcaption{font-size:.66rem;color:var(--mute);padding:3px 7px;background:var(--washi2);letter-spacing:.04em}
+.dimg.loading{height:170px;display:flex;align-items:center;justify-content:center;font-size:.75rem;color:var(--mute)}
+.imglink{display:inline-block;margin-top:8px;font-size:.75rem;font-family:inherit;border:1px solid var(--line);background:var(--washi);border-radius:2px;padding:4px 10px;color:var(--sumi);text-decoration:none;cursor:pointer}
+.imglink:hover{border-color:var(--sumi)}
+.detail .dpref{font-size:.78rem;color:var(--mute);margin-top:6px}
+.detail .dgrp{margin-top:9px;padding-top:8px;border-top:1px dotted var(--line);font-size:.8rem}
+.detail .dgrp b{font-family:"Zen Old Mincho",serif;letter-spacing:.06em}
+.detail .dgrp .gi{display:inline-block;margin:3px 5px 0 0;padding:2px 8px;background:var(--washi);border-radius:2px;cursor:pointer;font-size:.78rem}
+.detail .dgrp .gi.cur{background:var(--sumi);color:var(--washi2)}
+
+.grp{margin-bottom:10px}
+.grp:last-child{margin-bottom:0}
+.grp h3{font-size:.66rem;font-weight:700;letter-spacing:.14em;margin:0 0 5px;display:inline-block;padding:2px 8px;border-radius:2px;color:#fff}
+.grp.o h3{background:var(--c-o)} .grp.m h3{background:var(--c-m)} .grp.p h3{background:var(--c-p)}
+.grp.w h3{background:var(--c-w)} .grp.c h3{background:var(--c-c)} .grp.s h3{background:var(--c-s)}
+.grp.a h3{background:var(--c-a)} .grp.f h3{background:var(--c-f)}
+.items{display:flex;flex-wrap:wrap;gap:5px}
+.item{font-size:.82rem;background:#fff;border:1px solid var(--line);border-radius:2px;padding:3px 8px;cursor:pointer;font-family:inherit;color:var(--sumi);position:relative}
+.item:hover{border-color:var(--sumi)}
+.item.on{background:var(--sumi);color:var(--washi2);border-color:var(--sumi)}
+.item.hasnote::after{content:"";position:absolute;top:2px;right:2px;width:4px;height:4px;border-radius:50%;background:var(--ai2)}
+.item.on.hasnote::after{background:var(--washi2)}
+.empty{color:var(--mute);font-size:.8rem}
+.done{margin-top:13px;padding-top:11px;border-top:1px dashed var(--line);display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--mute)}
+.done button{font-family:inherit;font-size:.78rem;font-weight:700;padding:5px 12px;border:1.5px solid var(--sumi);background:var(--washi2);border-radius:2px;cursor:pointer}
+.done button[aria-pressed="true"]{background:var(--ai);color:#fff;border-color:var(--ai)}
+
+.qcard{background:var(--ai);color:var(--washi2);border:1.5px solid var(--sumi);border-radius:4px;padding:15px;margin-bottom:11px;box-shadow:3px 3px 0 rgba(25,29,35,.2)}
+.qmeta{font-size:.66rem;letter-spacing:.16em;color:#a9bdd2;margin-bottom:6px}
+.qtext{font-family:"Zen Old Mincho",serif;font-size:1.2rem;font-weight:700;line-height:1.55;letter-spacing:.04em}
+.qhint{font-size:.76rem;color:#a9bdd2;margin-top:7px}
+.choices{display:grid;gap:7px;margin-top:10px}
+.choices button{font-family:inherit;font-size:.92rem;font-weight:500;text-align:left;padding:11px 13px;border:1.5px solid var(--sumi);background:var(--washi2);border-radius:3px;cursor:pointer;color:var(--sumi)}
+.choices button.right{background:var(--ok);color:#fff;border-color:var(--ok)}
+.choices button.wrong{background:var(--ng);color:#fff;border-color:var(--ng)}
+.feedback{margin-top:11px;padding:12px 13px;border-radius:3px;font-size:.88rem;border:1.5px solid var(--sumi);background:var(--washi2)}
+.feedback b{font-family:"Zen Old Mincho",serif;letter-spacing:.06em}
+.feedback .fnote{font-size:.83rem;margin-top:6px}
+.feedback .fchain{font-size:.79rem;color:var(--mute);margin-top:7px;padding-top:7px;border-top:1px dotted var(--line)}
+.score{display:flex;gap:14px;font-size:.76rem;color:var(--mute);letter-spacing:.08em;margin-bottom:9px}
+.score b{font-size:1.12rem;color:var(--sumi);font-family:"Zen Old Mincho",serif}
+.btnrow{display:flex;gap:8px;margin-top:11px;flex-wrap:wrap}
+.btn{font-family:inherit;font-size:.85rem;font-weight:700;padding:9px 18px;border:1.5px solid var(--sumi);background:var(--sumi);color:var(--washi2);border-radius:2px;cursor:pointer;letter-spacing:.05em}
+.btn.ghost{background:var(--washi2);color:var(--sumi)}
+
+.section{margin-bottom:20px}
+.section>h2{font-family:"Zen Old Mincho",serif;font-size:1.02rem;font-weight:900;letter-spacing:.13em;margin:0 0 3px;padding-bottom:5px;border-bottom:2px solid var(--sumi)}
+.section .note{font-size:.74rem;color:var(--mute);margin:6px 0 9px}
+.row{display:flex;gap:9px;align-items:baseline;padding:6px 8px;border-bottom:1px dotted var(--line);cursor:pointer;font-size:.86rem}
+.row:hover{background:var(--washi2)}
+.row .num{font-family:"Zen Old Mincho",serif;font-size:.7rem;color:var(--mute);min-width:24px;text-align:right;flex-shrink:0}
+.row .pf{font-size:.71rem;color:var(--mute);margin-left:auto;text-align:right;flex-shrink:0;padding-left:8px}
+.trio{background:var(--washi2);border:1.5px solid var(--sumi);border-radius:4px;padding:11px 13px;margin-bottom:8px;cursor:pointer}
+.trio h3{font-family:"Zen Old Mincho",serif;font-size:.96rem;margin:0 0 3px;letter-spacing:.09em}
+.trio p{margin:0;font-size:.84rem;line-height:1.8}
+.trio .tip{font-size:.74rem;color:var(--mute);margin-top:4px}
+.hidden{display:none}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+
+<header><div class="wrap">
+  <h1>国内観光地理マップ</h1>
+  <div class="sub">47都道府県 × 8分野　温泉・祭り・国立公園・世界遺産・城・名所・空港・食</div>
+</div></header>
+
+<div class="wrap">
+  <div class="tabs" role="tablist">
+    <button role="tab" aria-selected="true" data-tab="map">地図で覚える</button>
+    <button role="tab" aria-selected="false" data-tab="quiz">クイズ</button>
+    <button role="tab" aria-selected="false" data-tab="list">横断まとめ</button>
+  </div>
+
+  <section id="tab-map">
+    <div class="chips" id="chips"></div>
+    <div class="chips" id="regchips"></div>
+    <div class="toolbar">
+      <label><input type="checkbox" id="blank"> 白地図モード</label>
+      <label><input type="checkbox" id="photo" checked> 写真を表示</label>
+      <span class="pg">覚えた <b id="pgN">0</b> / 47</span>
+    </div>
+    <div class="mapbox" id="mapbox"></div>
+    <div class="maplegend"><span id="legend">都道府県をタップすると詳細が出ます</span><button id="clearHl" class="hidden">解除</button></div>
+    <input class="search" id="search" type="search" placeholder="検索（例：草津／ねぶた／現存天守／KMJ／カルデラ）">
+    <div id="panel"></div>
+  </section>
+
+  <section id="tab-quiz" class="hidden">
+    <div class="chips" id="qchips"></div>
+    <div class="score"><span>正解 <b id="sOk">0</b></span><span>出題 <b id="sAll">0</b></span><span>正答率 <b id="sPct">—</b></span></div>
+    <div class="qcard">
+      <div class="qmeta" id="qmeta">QUESTION</div>
+      <div class="qtext" id="qtext">準備中…</div>
+      <div class="qhint" id="qhint"></div>
+    </div>
+    <div class="mapbox hidden" id="qmapbox"></div>
+    <div class="choices" id="qchoices"></div>
+    <div id="qfeedback"></div>
+    <div class="btnrow">
+      <button class="btn" id="qnext">次の問題</button>
+      <button class="btn ghost" id="qreset">成績をリセット</button>
+    </div>
+  </section>
+
+  <section id="tab-list" class="hidden"><div id="listbody"></div></section>
+</div>
+
+<script>
+/* ============================================================
+   データ　「名称|解説」形式。解説は覚えるためのフックのみ。
+   o温泉 m祭り p国立公園 w世界遺産 c城・史跡 s名所景勝 a空港 f食・特産
+   ============================================================ */
+const P=[
+["北海道","北海道",86,4,{
+o:["登別|地獄谷。9種の泉質が湧く温泉のデパート","定山渓|札幌の奥座敷","層雲峡|大雪山の柱状節理の峡谷","洞爺|有珠山・昭和新山の麓","川湯|強酸性硫黄泉。屈斜路湖畔","湯の川|函館の海辺","十勝川|世界的に希少なモール温泉（植物性）","ニセコ湯本"],
+m:["さっぽろ雪まつり|2月・大通公園の大雪像","YOSAKOIソーラン祭り|6月"],
+p:["利尻礼文サロベツ|海抜0mから高山植物が咲く","知床|流氷が育む食物連鎖","阿寒摩周|マリモと霧の摩周湖","釧路湿原|日本最大の湿原。タンチョウ","大雪山|日本最大の国立公園。「北海道の屋根」","日高山脈襟裳十勝|2024年指定。35番目で最新","支笏洞爺|支笏湖は日本最北の不凍湖"],
+w:["知床〈自然〉|2005年。海と陸の生態系のつながりを評価","北海道・北東北の縄文遺跡群|2021年。北海道＋青森・岩手・秋田"],
+c:["五稜郭|星形の稜堡式城郭。箱館戦争","松前城|北海道唯一の日本式城郭"],
+s:["摩周湖|「霧の摩周湖」高い透明度","小樽運河","函館山の夜景","富良野・美瑛|ラベンダーと丘","旭山動物園|行動展示で有名"],
+a:["新千歳|CTS・道内の玄関口","函館|HKD","旭川|AKJ","釧路|KUH","女満別|MMB・網走／知床方面","稚内|WKJ・日本最北"],
+f:["ジンギスカン","石狩鍋","ちゃんちゃん焼き","毛ガニ・ホタテ","夕張メロン"]}],
+
+["青森","東北",86,11,{
+o:["酸ヶ湯|すかゆ。ヒバ千人風呂。国民保養温泉地 第1号","浅虫|陸奥湾の海辺","蔦|ブナ林の一軒宿"],
+m:["青森ねぶた祭|8月・人形型ねぶたとハネト","弘前ねぷたまつり|8月・扇ねぷた","八戸三社大祭|7〜8月・ユネスコ"],
+p:["十和田八幡平|十和田湖・奥入瀬渓流","三陸復興"],
+w:["白神山地〈自然〉|1993年。世界最大級のブナ原生林","北海道・北東北の縄文遺跡群|三内丸山遺跡"],
+c:["弘前城|現存天守12。桜の名所"],
+s:["奥入瀬渓流|十和田湖から流れ出る唯一の川","十和田湖|二重カルデラ湖","恐山|日本三大霊場。イタコ","仏ヶ浦","八甲田山","竜飛崎"],
+a:["青森|AOJ","三沢|MSJ"],
+f:["大間のマグロ","けの汁","せんべい汁|八戸","りんご|生産量日本一"]}],
+
+["秋田","東北",80,17,{
+o:["乳頭温泉郷|鶴の湯の白濁湯","玉川|pH1.2の強酸性。日本一の湧出量の単一泉","後生掛|オンドル・箱蒸し"],
+m:["秋田竿燈まつり|8月・稲穂に見立てた提灯","なまはげ柴灯まつり|2月・真山神社","角館祭りのやま行事|9月・ユネスコ","西馬音内の盆踊|8月・三大盆踊り。編笠と亡者踊り"],
+p:["十和田八幡平"],
+w:["白神山地〈自然〉","北海道・北東北の縄文遺跡群|大湯環状列石"],
+c:["角館武家屋敷|みちのくの小京都。しだれ桜","久保田城跡"],
+s:["田沢湖|水深423m・日本一深い湖。たつこ像","男鹿半島|なまはげ","抱返り渓谷"],
+a:["秋田|AXT","大館能代|ONJ"],
+f:["きりたんぽ鍋","しょっつる鍋|ハタハタ","稲庭うどん|三大うどん"]}],
+
+["岩手","東北",92,17,{
+o:["花巻温泉郷|宮沢賢治ゆかり","繋|つなぎ","鶯宿"],
+m:["チャグチャグ馬コ|6月・鈴を付けた馬の行進","盛岡さんさ踊り|8月"],
+p:["十和田八幡平","三陸復興|リアス海岸と震災の記憶"],
+w:["平泉|2011年。奥州藤原氏の浄土思想を表す庭園群","明治日本の産業革命遺産|橋野鉄鉱山","北海道・北東北の縄文遺跡群|御所野遺跡"],
+c:["中尊寺金色堂|奥州藤原氏。金箔と螺鈿","毛越寺|浄土庭園が残る"],
+s:["浄土ヶ浜|白い流紋岩の海岸","龍泉洞|三大鍾乳洞。地底湖の透明度","厳美渓","猊鼻渓|舟下りと舟歌"],
+a:["いわて花巻|HNA"],
+f:["わんこそば","前沢牛","盛岡冷麺・じゃじゃ麺","南部鉄器"]}],
+
+["宮城","東北",92,23,{
+o:["鳴子温泉郷|こけしと多彩な泉質","秋保|あきう。仙台の奥座敷","作並","遠刈田|とおがった"],
+m:["仙台七夕まつり|8月・和紙の吹き流し"],
+p:["三陸復興"],
+w:[],
+c:["仙台城跡|青葉城。伊達政宗","瑞巌寺|伊達家の菩提寺"],
+s:["松島〈日本三景〉|260余の島。「松島や〜」","蔵王の御釜|エメラルドの火口湖","鳴子峡"],
+a:["仙台|SDJ・東北の拠点空港"],
+f:["牛たん焼き","ずんだ餅","笹かまぼこ","カキ|松島湾"]}],
+
+["新潟","中部",73,29,{
+o:["越後湯沢|川端康成『雪国』の舞台","月岡|エメラルドグリーンの硫黄泉","瀬波","松之山|日本三大薬湯","赤倉|妙高高原"],
+m:["長岡まつり大花火大会|8月・正三尺玉とフェニックス"],
+p:["磐梯朝日","尾瀬","上信越高原","妙高戸隠連山","中部山岳"],
+w:["佐渡島の金山|2024年登録。日本で26番目"],
+c:["春日山城跡|上杉謙信の居城"],
+s:["佐渡島|たらい舟・トキ・能舞台","清津峡|日本三大峡谷","弥彦神社","星峠の棚田"],
+a:["新潟|KIJ"],
+f:["へぎそば|布海苔つなぎ","笹団子","コシヒカリ|米産出額日本一","日本酒|酒蔵数日本一"]}],
+
+["福島","東北",89,29,{
+o:["飯坂|奥州三名湯","東山|会津の奥座敷","岳|だけ","土湯","磐梯熱海","高湯"],
+m:["相馬野馬追|甲冑競馬と神旗争奪戦"],
+p:["磐梯朝日","日光","尾瀬"],
+w:[],
+c:["鶴ヶ城|会津若松城。戊辰戦争と白虎隊","大内宿|茅葺きが並ぶ会津西街道の宿場"],
+s:["五色沼|磐梯山の噴火でできた湖沼群","あぶくま洞","塔のへつり"],
+a:["福島|FKS"],
+f:["喜多方ラーメン","こづゆ","桃|生産量全国2位"]}],
+
+["群馬","関東",71,36,{
+o:["草津|自然湧出量日本一。湯畑・湯もみ・時間湯","伊香保|石段街と黄金の湯","水上","四万|しま。「四万の病を治す」が名の由来","万座|標高1800mの硫黄泉","川中|日本三美人の湯","老神"],
+m:[],
+p:["上信越高原","日光","尾瀬|水芭蕉と湿原の木道"],
+w:["富岡製糸場と絹産業遺産群|フランス式の官営器械製糸場"],
+c:["岩櫃城跡"],
+s:["吹割の滝|「東洋のナイアガラ」","榛名湖","碓氷峠めがね橋"],
+a:[],
+f:["下仁田ネギ","こんにゃく|生産量日本一","水沢うどん|三大うどん","おっきりこみ","焼きまんじゅう"]}],
+
+["栃木","関東",82,36,{
+o:["鬼怒川|渓谷沿いの大型旅館","那須|皇室の御用邸","塩原","日光湯元","川治"],
+m:[],
+p:["日光|華厳の滝・中禅寺湖・戦場ヶ原","尾瀬"],
+w:["日光の社寺|東照宮・二荒山神社・輪王寺の103棟"],
+c:["日光東照宮|陽明門・眠り猫・三猿","足利学校|日本最古の学校"],
+s:["華厳の滝〈三名瀑〉|落差97m。中禅寺湖の水が落ちる","中禅寺湖|男体山の噴火でできた","大谷石地下採掘場跡","那須高原"],
+a:[],
+f:["宇都宮餃子","佐野ラーメン","かんぴょう|生産量日本一","いちご|生産量日本一"]}],
+
+["茨城","関東",93,36,{
+o:["大子|袋田温泉","五浦|いづら"],
+m:["石岡のおまつり|9月"],
+p:["水郷筑波〈国定〉"],
+w:[],
+c:["弘道館|水戸藩の藩校"],
+s:["偕楽園〈三名園〉|水戸。梅3000本。徳川斉昭","袋田の滝〈三名瀑〉|四段に落ちる「四度の滝」","鹿島神宮|東国三社","筑波山|「西の富士、東の筑波」","国営ひたち海浜公園|ネモフィラ"],
+a:["茨城|IBR・百里"],
+f:["あんこう鍋","納豆|水戸","干し芋|生産量日本一","メロン|生産量日本一"]}],
+
+["埼玉","関東",78,42,{
+o:["秩父温泉"],
+m:["秩父夜祭|12月・三大曳山祭・ユネスコ","川越氷川祭の山車行事|10月・ユネスコ"],
+p:["秩父多摩甲斐"],
+w:[],
+c:["川越城本丸御殿","鉢形城跡"],
+s:["川越蔵造りの町並み|小江戸。時の鐘","長瀞ライン下り|岩畳","三峯神社"],
+a:[],
+f:["草加せんべい","深谷ねぎ","冷汁うどん"]}],
+
+["千葉","関東",92,42,{
+o:["養老渓谷","鴨川"],
+m:[],
+p:["南房総〈国定〉"],
+w:[],
+c:["佐倉城跡"],
+s:["成田山新勝寺|初詣参拝者数トップ級","鋸山|地獄のぞきと大仏","犬吠埼|本土で最も早い初日の出（離島除く）","東京ディズニーリゾート","九十九里浜"],
+a:["成田国際|NRT・日本最大の国際線拠点"],
+f:["落花生|生産量日本一","なめろう","伊勢えび|房総","醤油|野田・銚子"]}],
+
+["東京","関東",80,48,{
+o:["奥多摩","式根島"],
+m:["神田祭|5月・三大祭。江戸総鎮守","山王祭|6月・日枝神社","三社祭|5月・浅草神社"],
+p:["小笠原|一度も大陸と地続きにならず固有種が進化","富士箱根伊豆|伊豆諸島","秩父多摩甲斐"],
+w:["小笠原諸島〈自然〉|2011年。東洋のガラパゴス","国立西洋美術館|ル・コルビュジエの建築作品。7か国17資産の一つ"],
+c:["江戸城跡|皇居東御苑"],
+s:["浅草寺|都内最古の寺。雷門","東京スカイツリー|634m","明治神宮","高尾山|ミシュラン三つ星"],
+a:["東京国際（羽田）|HND・発着回数日本一","八丈島|HAC"],
+f:["深川めし","江戸前寿司","佃煮","くさや|伊豆諸島"]}],
+
+["神奈川","関東",83,54,{
+o:["箱根湯本|箱根の玄関","強羅|大涌谷からの引き湯","湯河原|万葉集にも詠まれた","仙石原","芦之湯"],
+m:[],
+p:["富士箱根伊豆"],
+w:[],
+c:["小田原城|北条氏5代の拠点"],
+s:["鎌倉大仏|高徳院。露坐の大仏","鶴岡八幡宮","芦ノ湖|逆さ富士と海賊船","江の島","横浜中華街|日本最大","大涌谷|黒たまご"],
+a:[],
+f:["シウマイ|横浜","しらす|湘南","けんちん汁|建長寺が由来"]}],
+
+["石川","中部",44,42,{
+o:["和倉|海から湧く塩湯","山中・山代・粟津・片山津|加賀温泉郷","湯涌|金沢の奥座敷"],
+m:["青柏祭の曳山行事|5月・でか山・ユネスコ","お旅まつり|5月・子供歌舞伎"],
+p:["白山|白山信仰の霊峰"],
+w:[],
+c:["金沢城|石川門・海鼠壁","那谷寺"],
+s:["兼六園〈三名園〉|徽軫灯籠と雪吊り。六勝を兼ね備える","ひがし茶屋街","輪島朝市","白米千枚田|海に向かう棚田","金沢21世紀美術館"],
+a:["小松|KMQ","能登|NTQ"],
+f:["治部煮","のどぐろ","加賀野菜","金箔|全国生産の99%","輪島塗・九谷焼"]}],
+
+["富山","中部",55,42,{
+o:["宇奈月|黒部峡谷の玄関口","立山山麓"],
+m:["おわら風の盆|9月・八尾。胡弓と無言の踊り","高岡御車山祭|5月・ユネスコ"],
+p:["中部山岳","白山"],
+w:["五箇山の合掌造り集落|相倉・菅沼。白川郷と一体で登録"],
+c:["瑞龍寺|前田利長の菩提寺。国宝","高岡城跡"],
+s:["立山黒部アルペンルート|春の雪の大谷","黒部峡谷トロッコ電車","雨晴海岸|海越しの立山連峰","黒部ダム|堤高186m・日本一"],
+a:["富山|TOY"],
+f:["ますのすし","白えび","ホタルイカ","昆布〆"]}],
+
+["長野","中部",66,42,{
+o:["別所|信州最古の温泉","上諏訪","野沢|外湯13か所","白骨|乳白色の湯","渋・湯田中","昼神","浅間"],
+m:["諏訪大社御柱祭|7年目ごと（寅・申年）の4〜5月。木落し"],
+p:["中部山岳|上高地・槍ヶ岳・穂高","上信越高原","秩父多摩甲斐","妙高戸隠連山","南アルプス"],
+w:[],
+c:["松本城|国宝5城・現存天守。黒い下見板張り","松代城跡"],
+s:["善光寺|宗派を問わない。7年に一度の御開帳","上高地|河童橋・大正池","妻籠宿|中山道。日本初の町並み保存","地獄谷野猿公苑|温泉に入るサル","諏訪湖|御神渡り"],
+a:["松本|MMJ・日本一標高の高い空港"],
+f:["信州そば","野沢菜","おやき","りんご・ぶどう"]}],
+
+["福井","中部",44,48,{
+o:["あわら|関西の奥座敷","越前海岸"],
+m:[],
+p:["白山","若狭湾〈国定〉"],
+w:[],
+c:["丸岡城|現存天守12。最古級とされる","一乗谷朝倉氏遺跡|戦国の城下町がまるごと出土"],
+s:["東尋坊|柱状節理の断崖","永平寺|曹洞宗大本山。道元","三方五湖|レインボーライン","気比松原〈三大松原〉","福井県立恐竜博物館"],
+a:[],
+f:["越前がに","へしこ","ソースカツ丼","若狭ぐじ"]}],
+
+["山梨","中部",68,48,{
+o:["石和|いさわ","下部|武田信玄の隠し湯","西山"],
+m:[],
+p:["富士箱根伊豆","南アルプス","秩父多摩甲斐"],
+w:["富士山|2013年。「信仰の対象と芸術の源泉」＝文化遺産"],
+c:["武田神社|躑躅ヶ崎館跡"],
+s:["富士五湖|本栖湖の富士は千円札の図案","昇仙峡","忍野八海","猿橋〈三奇橋〉|橋脚のない刎橋"],
+a:[],
+f:["ほうとう","甲州ワイン|ぶどう・ももとも生産量日本一","吉田のうどん"]}],
+
+["岐阜","中部",57,48,{
+o:["下呂〈三名泉〉|林羅山が有馬・草津と並べた","奥飛騨温泉郷|新穂高ロープウェイ","長良川"],
+m:["高山祭|4月と10月・三大曳山祭・ユネスコ","郡上おどり|7〜9月・お盆は徹夜おどり","古川祭|4月・起し太鼓"],
+p:["中部山岳","白山"],
+w:["白川郷の合掌造り集落|1995年。急勾配の茅葺き屋根"],
+c:["岐阜城|金華山山頂。信長の「天下布武」","郡上八幡城"],
+s:["飛騨高山さんまち|古い町並み","長良川鵜飼|1300年の伝統。宮内庁式部職の鵜匠","馬籠宿|中山道","養老の滝","モネの池"],
+a:[],
+f:["飛騨牛","朴葉味噌","五平餅","鮎"]}],
+
+["静岡","中部",71,54,{
+o:["熱海|首都圏の代表的温泉地","伊東","修善寺|伊豆最古。独鈷の湯","伊豆長岡","寸又峡|夢の吊橋","下賀茂"],
+m:[],
+p:["富士箱根伊豆","南アルプス"],
+w:["富士山|構成資産に三保松原・富士山本宮浅間大社","明治日本の産業革命遺産|韮山反射炉"],
+c:["駿府城跡|徳川家康の隠居城","久能山東照宮|家康が最初に葬られた地"],
+s:["三保松原〈三大松原〉|羽衣伝説","登呂遺跡|弥生時代の水田跡","大井川鐵道SL","浜名湖","日本平"],
+a:["静岡|FSZ・富士山静岡空港"],
+f:["静岡茶|生産量日本一","うなぎ|浜名湖","桜えび|駿河湾","わさび"]}],
+
+["愛知","中部",60,54,{
+o:["湯谷|ゆや","西浦","三谷"],
+m:["犬山祭|4月・ユネスコ","尾張津島天王祭|7月・巻藁船","知立まつり|5月・ユネスコ"],
+p:[],
+w:[],
+c:["名古屋城|金鯱と本丸御殿","犬山城|国宝5城・現存天守。最古級の天守","岡崎城|家康生誕の地"],
+s:["熱田神宮|三種の神器・草薙剣","博物館明治村","香嵐渓|紅葉","トヨタ産業技術記念館"],
+a:["中部国際（セントレア）|NGO","県営名古屋|NKM"],
+f:["ひつまぶし","味噌煮込みうどん","きしめん","手羽先","八丁味噌"]}],
+
+["三重","近畿",69,60,{
+o:["榊原|『枕草子』の「ななくりの湯」","湯の山","長島"],
+m:["上野天神祭|10月・ユネスコ・鬼行列","石取祭|8月・ユネスコ・日本一やかましい祭"],
+p:["伊勢志摩|リアス海岸と真珠養殖","吉野熊野"],
+w:["紀伊山地の霊場と参詣道|熊野古道 伊勢路"],
+c:["伊賀上野城|高石垣。藤堂高虎","松阪城跡"],
+s:["伊勢神宮|20年ごとの式年遷宮","夫婦岩|二見浦","英虞湾|御木本幸吉の真珠養殖発祥","鳥羽水族館|飼育種類数日本一","赤目四十八滝","ナガシマスパーランド"],
+a:[],
+f:["松阪牛〈三大和牛〉","伊勢うどん","てこね寿司","赤福"]}],
+
+["滋賀","近畿",47,54,{
+o:["おごと|雄琴","長浜"],
+m:["長浜曳山祭|4月・ユネスコ・子ども歌舞伎"],
+p:["琵琶湖〈国定〉"],
+w:["古都京都の文化財|延暦寺は滋賀県側"],
+c:["彦根城|国宝5城・現存天守。井伊家","安土城跡|信長の天下布武の拠点"],
+s:["琵琶湖|日本最大。県面積の約6分の1","比叡山延暦寺|最澄。日本仏教の母山","近江八幡水郷","白鬚神社|湖中の大鳥居","三井寺"],
+a:[],
+f:["近江牛〈三大和牛〉","ふなずし","赤こんにゃく"]}],
+
+["京都","近畿",36,54,{
+o:["湯の花","天橋立岩滝","木津"],
+m:["祇園祭|7月・三大祭・三大曳山祭。八坂神社","葵祭|5月・下鴨／上賀茂神社","時代祭|10月・平安神宮","五山送り火|8月16日"],
+p:["山陰海岸","丹後天橋立大江山〈国定〉"],
+w:["古都京都の文化財|17資産。宇治・大津も含む"],
+c:["二条城|大政奉還の舞台。二の丸御殿"],
+s:["清水寺|懸造の舞台","金閣寺・銀閣寺","伏見稲荷大社|千本鳥居","嵐山・渡月橋","天橋立〈日本三景〉|股のぞき","三十三間堂"],
+a:[],
+f:["京料理・湯豆腐","千枚漬","八ツ橋","宇治茶"]}],
+
+["大阪","近畿",47,60,{
+o:["犬鳴山"],
+m:["天神祭|7月・三大祭。船渡御と奉納花火","岸和田だんじり祭|9月・やりまわし"],
+p:["瀬戸内海"],
+w:["百舌鳥・古市古墳群|仁徳天皇陵は世界最大級の墳墓"],
+c:["大阪城|豊臣秀吉","四天王寺|聖徳太子創建"],
+s:["道頓堀","通天閣","住吉大社|反橋","ユニバーサル・スタジオ・ジャパン"],
+a:["関西国際|KIX・24時間運用の海上空港","大阪国際（伊丹）|ITM"],
+f:["たこ焼き・お好み焼き","箱寿司","きつねうどん"]}],
+
+["兵庫","近畿",36,60,{
+o:["有馬〈三名泉〉|金泉（含鉄）と銀泉（炭酸）","城崎|外湯めぐり。志賀直哉『城の崎にて』","湯村|荒湯98℃の高温泉","宝塚"],
+m:["灘のけんか祭り|10月・松原八幡神社。屋台のぶつけ合い"],
+p:["瀬戸内海|日本初の国立公園の一つ","山陰海岸|世界ジオパーク"],
+w:["姫路城|1993年。日本初の世界文化遺産の一つ"],
+c:["姫路城|白鷺城。国宝5城・現存天守","竹田城跡|雲海に浮かぶ天空の城","明石城"],
+s:["北野異人館","明石海峡大橋|全長3911m","淡路島","甲子園球場","生野銀山"],
+a:["神戸|UKB","但馬|TJH"],
+f:["神戸ビーフ〈三大和牛〉","明石焼","ぼたん鍋|丹波","そうめん|揖保乃糸"]}],
+
+["奈良","近畿",58,60,{
+o:["十津川|全国初の源泉かけ流し宣言","洞川","吉野"],
+m:["若草山焼き|1月","修二会（お水取り）|3月・東大寺二月堂"],
+p:["吉野熊野"],
+w:["古都奈良の文化財|東大寺・春日大社など8資産","法隆寺地域の仏教建造物|現存する世界最古の木造建築","紀伊山地の霊場と参詣道|吉野・大峯"],
+c:["平城宮跡|朱雀門・大極殿","石舞台古墳|蘇我馬子の墓とされる"],
+s:["東大寺大仏|盧舎那仏","春日大社|三千の燈籠","法隆寺","吉野山の桜|一目千本","室生寺|女人高野"],
+a:[],
+f:["柿の葉寿司","三輪そうめん","奈良漬"]}],
+
+["和歌山","近畿",48,66,{
+o:["白浜|崎の湯。万葉の時代からの古湯","勝浦|洞窟風呂・忘帰洞","龍神|日本三美人の湯","湯の峰|つぼ湯は世界遺産に登録された唯一の温泉","川湯|川底から湧く"],
+m:["那智の扇祭り|7月14日・那智の火祭"],
+p:["吉野熊野"],
+w:["紀伊山地の霊場と参詣道|高野山・熊野三山・熊野古道。「道」の世界遺産は世界的に稀"],
+c:["和歌山城"],
+s:["高野山金剛峯寺|弘法大師空海。奥之院","那智の滝〈三名瀑〉|落差133m・一段の滝で日本一","熊野本宮大社","橋杭岩","アドベンチャーワールド"],
+a:["南紀白浜|SHM"],
+f:["梅干し|南高梅。生産量日本一","みかん|生産量日本一","生まぐろ|那智勝浦"]}],
+
+["鳥取","中国",25,60,{
+o:["三朝|みささ。世界有数のラドン泉","皆生|かいけ。海辺の温泉","はわい|東郷湖のほとり","岩井"],
+m:["鳥取しゃんしゃん傘踊り|8月"],
+p:["大山隠岐","山陰海岸"],
+w:[],
+c:["鳥取城跡","三徳山三仏寺投入堂|断崖の懸造。国宝"],
+s:["鳥取砂丘|東西16km。日本最大級の海岸砂丘","水木しげるロード|境港","浦富海岸","大山|伯耆富士"],
+a:["鳥取|TTJ・鳥取砂丘コナン空港","米子|YGJ・米子鬼太郎空港"],
+f:["松葉がに","二十世紀梨","大山どり"]}],
+
+["島根","中国",14,60,{
+o:["玉造|たまつくり。『出雲国風土記』の美人の湯","温泉津|ゆのつ。世界遺産の中にある温泉街","湯の川|日本三美人の湯","三瓶"],
+m:["石見神楽|通年公演。八岐大蛇"],
+p:["大山隠岐"],
+w:["石見銀山遺跡|2007年。環境に配慮した鉱山開発を評価"],
+c:["松江城|国宝5城・現存天守。千鳥城","月山富田城跡|尼子氏"],
+s:["出雲大社|神在月。大しめ縄","足立美術館|日本庭園ランキング連続1位","隠岐諸島|ローソク島","宍道湖の夕日","津和野|山陰の小京都"],
+a:["出雲|IZO・出雲縁結び空港","石見|IWJ","隠岐|OKI"],
+f:["出雲そば|割子そば","しじみ|宍道湖","のどぐろ"]}],
+
+["岡山","中国",28,66,{
+o:["湯原|川底から湧く砂湯","奥津","湯郷|以上、美作三湯"],
+m:["西大寺会陽|2月・はだか祭り。宝木争奪"],
+p:["瀬戸内海","大山隠岐"],
+w:[],
+c:["岡山城|烏城（うじょう）","備中松山城|現存天守12。日本一高所の山城","閑谷学校|庶民のための藩校"],
+s:["後楽園〈三名園〉|岡山城を借景","倉敷美観地区|白壁となまこ壁","大原美術館|日本初の西洋美術館","吉備津神社|鳴釜神事","蒜山高原"],
+a:["岡山|OKJ・岡山桃太郎空港"],
+f:["ままかり","白桃・マスカット","ばら寿司"]}],
+
+["広島","中国",17,66,{
+o:["湯来|ゆき","湯坂"],
+m:["管絃祭|旧暦6月・厳島神社"],
+p:["瀬戸内海"],
+w:["厳島神社|1996年。海上に建つ社殿と大鳥居","原爆ドーム|1996年。負の遺産"],
+c:["広島城|鯉城","福山城"],
+s:["宮島〈日本三景〉","平和記念公園","尾道・千光寺|坂の町","しまなみ海道|サイクリングの聖地","鞆の浦|潮待ちの港","帝釈峡"],
+a:["広島|HIJ"],
+f:["広島風お好み焼き","カキ|生産量日本一","もみじ饅頭","熊野筆"]}],
+
+["山口","中国",6,66,{
+o:["湯田|白狐の伝説","長門湯本|音信川沿い","俵山","川棚"],
+m:[],
+p:["瀬戸内海","秋吉台〈国定〉"],
+w:["明治日本の産業革命遺産|萩反射炉・松下村塾など"],
+c:["萩城下町|世界遺産構成資産。三角州の城下町","岩国城"],
+s:["錦帯橋〈三奇橋〉|五連の木造アーチ橋","秋吉台・秋芳洞〈三大鍾乳洞〉|日本最大級のカルスト台地","元乃隅神社|123基の朱い鳥居","角島大橋","関門海峡"],
+a:["山口宇部|UBJ","岩国錦帯橋|IWK"],
+f:["ふぐ|下関は取扱量日本一","瓦そば","夏みかん"]}],
+
+["徳島","四国",52,72,{
+o:["祖谷|いや。平家落人伝説","鳴門"],
+m:["阿波おどり|8月・約400年の歴史。「踊る阿呆に見る阿呆」"],
+p:["瀬戸内海","剣山〈国定〉"],
+w:[],
+c:["徳島城跡"],
+s:["鳴門の渦潮|世界最大級。大潮時は直径20m","祖谷のかずら橋〈三奇橋〉|シラクチカズラ製","大歩危・小歩危","大塚国際美術館|陶板名画1000点"],
+a:["徳島|TKS・徳島阿波おどり空港"],
+f:["阿波尾鶏","すだち|生産量ほぼ全国100%","そば米汁","鳴門金時"]}],
+
+["香川","四国",43,72,{
+o:["こんぴら温泉郷","塩江"],
+m:[],
+p:["瀬戸内海"],
+w:[],
+c:["丸亀城|現存天守12。石垣の高さ日本一","高松城跡|日本三大水城"],
+s:["栗林公園|一歩一景。特別名勝で最大の広さ","金刀比羅宮|本宮まで785段","小豆島|オリーブと二十四の瞳","直島|地中美術館","屋島|源平合戦","父母ヶ浜|日本のウユニ塩湖"],
+a:["高松|TAK"],
+f:["讃岐うどん〈三大うどん〉","オリーブ|生産量日本一","骨付鳥","和三盆"]}],
+
+["愛媛","四国",32,72,{
+o:["道後|日本最古級。『坊っちゃん』と千と千尋","鈍川"],
+m:["新居浜太鼓祭り|10月・太鼓台のかきくらべ"],
+p:["瀬戸内海","足摺宇和海"],
+w:[],
+c:["松山城|現存天守12。連立式天守","宇和島城|現存天守12。藤堂高虎","大洲城"],
+s:["道後温泉本館|重要文化財の共同浴場","内子の町並み|木蝋で栄えた","下灘駅|海に一番近い駅","しまなみ海道","大山祇神社|国宝武具の宝庫"],
+a:["松山|MYJ"],
+f:["鯛めし","じゃこ天","みかん・伊予柑","一六タルト"]}],
+
+["高知","四国",35,78,{
+o:["あしずり","馬路"],
+m:["よさこい祭り|8月・鳴子を持って踊る"],
+p:["足摺宇和海"],
+w:[],
+c:["高知城|現存天守12。本丸御殿が現存する唯一の城"],
+s:["桂浜|坂本龍馬像","四万十川|最後の清流。沈下橋","室戸岬|世界ジオパーク","仁淀ブルー","龍河洞〈三大鍾乳洞〉"],
+a:["高知|KCZ・高知龍馬空港"],
+f:["カツオのたたき","皿鉢料理","ゆず|生産量日本一"]}],
+
+["福岡","九州",10,72,{
+o:["原鶴","二日市","船小屋","脇田"],
+m:["博多祇園山笠|7月・追い山・ユネスコ","博多どんたく港まつり|5月・動員数日本最大級","戸畑祇園大山笠|7月・ユネスコ"],
+p:["瀬戸内海"],
+w:["「神宿る島」宗像・沖ノ島|女人禁制・上陸不可の島","明治日本の産業革命遺産|官営八幡製鐵所"],
+c:["福岡城跡","大野城跡|白村江の敗戦後の防衛"],
+s:["太宰府天満宮|菅原道真","柳川川下り","門司港レトロ","中洲の屋台","宮地嶽神社|光の道"],
+a:["福岡|FUK・市街地至近","北九州|KKJ"],
+f:["博多ラーメン|豚骨","もつ鍋","明太子","水炊き","八女茶"]}],
+
+["大分","九州",21,72,{
+o:["別府八湯|源泉数・湧出量ともに日本一","由布院|由布岳と金鱗湖","湯平|石畳の坂","長湯|世界屈指の炭酸泉","天ヶ瀬","筋湯"],
+m:[],
+p:["阿蘇くじゅう","瀬戸内海"],
+w:[],
+c:["岡城跡|滝廉太郎『荒城の月』","中津城|黒田官兵衛"],
+s:["別府地獄めぐり|海地獄・血の池地獄など","宇佐神宮|全国八幡宮の総本宮","臼杵石仏|国宝の磨崖仏","耶馬渓|青の洞門","高崎山"],
+a:["大分|OIT"],
+f:["とり天","関あじ・関さば","だんご汁","かぼす|生産量日本一"]}],
+
+["佐賀","九州",6,78,{
+o:["嬉野|うれしの。日本三大美肌の湯","武雄|大楠と楼門","古湯"],
+m:["唐津くんちの曳山行事|11月・ユネスコ","有田陶器市|4〜5月"],
+p:[],
+w:["明治日本の産業革命遺産|三重津海軍所跡"],
+c:["唐津城","名護屋城跡|秀吉の朝鮮出兵の拠点"],
+s:["吉野ヶ里遺跡|弥生の環濠集落","有田焼・伊万里|日本磁器発祥の地","虹の松原〈三大松原〉","祐徳稲荷神社"],
+a:["佐賀|HSG"],
+f:["呼子のイカ|活き造り","佐賀牛","ムツゴロウ|有明海","有田焼"]}],
+
+["長崎","九州",6,84,{
+o:["雲仙|日本初の国立公園。地獄めぐり","小浜|日本一長い足湯","島原"],
+m:["長崎くんち|10月・龍踊（じゃおどり）・ユネスコ","長崎ランタンフェスティバル|1〜2月"],
+p:["雲仙天草|雲仙は1934年の日本初の国立公園","西海|九十九島・五島列島"],
+w:["長崎と天草地方の潜伏キリシタン関連遺産|大浦天主堂など12資産","明治日本の産業革命遺産|端島炭坑（軍艦島）・旧グラバー住宅"],
+c:["島原城|島原・天草一揆","平戸城"],
+s:["ハウステンボス","稲佐山の夜景","九十九島","五島列島","出島|鎖国期唯一の対欧窓口","平和公園"],
+a:["長崎|NGS・海上空港","対馬|TSJ","五島福江|FUJ"],
+f:["ちゃんぽん・皿うどん","カステラ","卓袱料理","五島うどん"]}],
+
+["熊本","九州",15,78,{
+o:["黒川|入湯手形で露天風呂めぐり","杖立","山鹿","人吉|球磨川沿い","阿蘇内牧","地獄・垂玉"],
+m:["八代妙見祭の神幸行事|11月・ユネスコ・亀蛇（ガメ）","山鹿灯籠まつり|8月・千人灯籠踊り","藤崎八旛宮秋季例大祭|9月・随兵行列と飾り馬"],
+p:["阿蘇くじゅう|世界最大級のカルデラと草原","雲仙天草"],
+w:["長崎と天草地方の潜伏キリシタン関連遺産|﨑津集落"],
+c:["熊本城|加藤清正の武者返しの石垣","人吉城跡","菊池城跡"],
+s:["阿蘇草千里|中岳の火口","通潤橋|石造アーチ水路橋の放水","天草諸島|イルカウォッチング","菊池渓谷","五家荘"],
+a:["阿蘇くまもと|KMJ","天草|AXJ"],
+f:["馬刺し|生産量日本一","からし蓮根","太平燕","いきなり団子","い草|生産量日本一"]}],
+
+["宮崎","九州",20,84,{
+o:["京町","北郷","えびの高原"],
+m:["高千穂の夜神楽|11〜2月・33番の神楽"],
+p:["霧島錦江湾","日南海岸〈国定〉"],
+w:[],
+c:["飫肥城下町|おび。九州の小京都"],
+s:["高千穂峡|柱状節理と真名井の滝","鵜戸神宮|断崖の洞窟に社殿","青島・鬼の洗濯板","都井岬|野生馬","天岩戸神社"],
+a:["宮崎|KMI・宮崎ブーゲンビリア空港"],
+f:["地鶏の炭火焼","チキン南蛮","冷汁","マンゴー|太陽のタマゴ"]}],
+
+["鹿児島","九州",11,90,{
+o:["指宿|天然砂むし温泉","霧島|坂本龍馬の新婚旅行先","妙見","古里"],
+m:["おはら祭|11月"],
+p:["霧島錦江湾|桜島","屋久島","奄美群島","雲仙天草"],
+w:["屋久島〈自然〉|1993年。樹齢数千年の縄文杉","奄美大島・徳之島・沖縄島北部及び西表島〈自然〉|2021年","明治日本の産業革命遺産|旧集成館"],
+c:["鶴丸城跡","知覧武家屋敷|薩摩の小京都。特攻平和会館"],
+s:["桜島|大正噴火で大隅半島と陸続きに","仙巌園|桜島を借景にした島津家の庭園","縄文杉","種子島宇宙センター","曽木の滝"],
+a:["鹿児島|KOJ","屋久島|KUM","奄美|ASJ"],
+f:["黒豚しゃぶしゃぶ","鶏飯|奄美","さつまあげ","芋焼酎","黒酢|福山"]}],
+
+["沖縄","沖縄",6,96,{
+o:["琉球温泉龍神の湯"],
+m:["那覇ハーリー|5月・爬龍船競漕","全島エイサーまつり|9月"],
+p:["やんばる|ヤンバルクイナ・ノグチゲラ","慶良間諸島|ケラマブルー","西表石垣|イリオモテヤマネコとマングローブ"],
+w:["琉球王国のグスク及び関連遺産群|首里城・今帰仁城など9資産","奄美大島・徳之島・沖縄島北部及び西表島〈自然〉"],
+c:["首里城|2019年に正殿焼失、再建中","今帰仁城跡|なきじん","中城城跡"],
+s:["美ら海水族館|ジンベエザメ","竹富島|赤瓦と水牛車","川平湾|石垣島","万座毛","ひめゆりの塔"],
+a:["那覇|OKA","新石垣|ISG・南ぬ島石垣空港","宮古|MMY"],
+f:["沖縄そば","ゴーヤーチャンプルー","ラフテー","泡盛","海ぶどう"]}]
+];
+
+const CATS=[
+ {k:"o",label:"温泉",cls:"o"},{k:"m",label:"祭り",cls:"m"},{k:"p",label:"国立公園",cls:"p"},
+ {k:"w",label:"世界遺産",cls:"w"},{k:"c",label:"城・史跡",cls:"c"},{k:"s",label:"名所・景勝",cls:"s"},
+ {k:"a",label:"空港",cls:"a"},{k:"f",label:"食・特産",cls:"f"}
+];
+const CATMAP=Object.fromEntries(CATS.map(c=>[c.k,c]));
+const CATCOLOR={o:"var(--c-o)",m:"var(--c-m)",p:"var(--c-p)",w:"var(--c-w)",c:"var(--c-c)",s:"var(--c-s)",a:"var(--c-a)",f:"var(--c-f)"};
+
+/* 芋づるグループ（項目名の前方一致で紐づけ） */
+const GROUPS=[
+ ["日本三景",["松島","天橋立","宮島"]],
+ ["日本三名園",["偕楽園","兼六園","後楽園"]],
+ ["日本三名泉",["有馬","草津","下呂"]],
+ ["日本三古湯",["道後","有馬","白浜"]],
+ ["日本三美人の湯",["龍神","川中","湯の川"]],
+ ["日本三名瀑",["華厳の滝","那智の滝","袋田の滝"]],
+ ["日本三大鍾乳洞",["龍泉洞","秋吉台・秋芳洞","龍河洞"]],
+ ["日本三大松原",["三保松原","虹の松原","気比松原"]],
+ ["日本三奇橋",["錦帯橋","猿橋","祖谷のかずら橋"]],
+ ["日本三大祭",["祇園祭","天神祭","神田祭"]],
+ ["日本三大曳山祭",["秩父夜祭","祇園祭","高山祭"]],
+ ["日本三大盆踊り",["阿波おどり","郡上おどり","西馬音内の盆踊"]],
+ ["日本三大うどん",["讃岐うどん","稲庭うどん","水沢うどん"]],
+ ["日本三大和牛",["松阪牛","神戸ビーフ","近江牛"]],
+ ["現存天守12",["弘前城","松本城","丸岡城","犬山城","彦根城","姫路城","松江城","備中松山城","丸亀城","松山城","宇和島城","高知城"]],
+ ["国宝5城",["松本城","犬山城","彦根城","姫路城","松江城"]]
+];
+
+/* 隣接県（芋づる移動用） */
+const ADJ={
+北海道:["青森"],青森:["岩手","秋田"],岩手:["青森","秋田","宮城"],
+宮城:["岩手","秋田","山形","福島"],秋田:["青森","岩手","宮城","山形"],
+山形:["秋田","宮城","福島","新潟"],福島:["宮城","山形","新潟","群馬","栃木","茨城"],
+茨城:["福島","栃木","埼玉","千葉"],栃木:["福島","茨城","群馬","埼玉"],
+群馬:["福島","栃木","埼玉","長野","新潟"],埼玉:["群馬","栃木","茨城","千葉","東京","山梨","長野"],
+千葉:["茨城","埼玉","東京"],東京:["埼玉","千葉","神奈川","山梨"],神奈川:["東京","山梨","静岡"],
+新潟:["山形","福島","群馬","長野","富山"],富山:["新潟","長野","岐阜","石川"],
+石川:["富山","岐阜","福井"],福井:["石川","岐阜","滋賀","京都"],
+山梨:["埼玉","東京","神奈川","静岡","長野"],長野:["群馬","埼玉","山梨","静岡","愛知","岐阜","富山","新潟"],
+岐阜:["富山","石川","福井","長野","愛知","三重","滋賀"],静岡:["神奈川","山梨","長野","愛知"],
+愛知:["静岡","長野","岐阜","三重"],三重:["愛知","岐阜","滋賀","京都","奈良","和歌山"],
+滋賀:["福井","岐阜","三重","京都"],京都:["福井","滋賀","三重","奈良","大阪","兵庫"],
+大阪:["京都","兵庫","奈良","和歌山"],兵庫:["京都","大阪","鳥取","岡山"],
+奈良:["京都","三重","大阪","和歌山"],和歌山:["大阪","奈良","三重"],
+鳥取:["兵庫","岡山","広島","島根"],島根:["鳥取","広島","山口"],岡山:["兵庫","鳥取","広島"],
+広島:["岡山","鳥取","島根","山口"],山口:["島根","広島","福岡"],
+徳島:["香川","愛媛","高知"],香川:["徳島","愛媛"],愛媛:["香川","徳島","高知"],高知:["愛媛","徳島"],
+福岡:["佐賀","大分","熊本","山口"],佐賀:["福岡","長崎"],長崎:["佐賀"],
+熊本:["福岡","大分","宮崎","鹿児島"],大分:["福岡","熊本","宮崎"],宮崎:["熊本","大分","鹿児島"],
+鹿児島:["熊本","宮崎"],沖縄:[]
+};
+
+const PARKS=["利尻礼文サロベツ","知床","阿寒摩周","釧路湿原","大雪山","日高山脈襟裳十勝","支笏洞爺","十和田八幡平","三陸復興","磐梯朝日","日光","尾瀬","上信越高原","妙高戸隠連山","秩父多摩甲斐","小笠原","富士箱根伊豆","中部山岳","白山","南アルプス","伊勢志摩","吉野熊野","山陰海岸","瀬戸内海","大山隠岐","足摺宇和海","西海","雲仙天草","阿蘇くじゅう","霧島錦江湾","屋久島","奄美群島","やんばる","慶良間諸島","西表石垣"];
+const PARK_PREF={"利尻礼文サロベツ":"北海道","知床":"北海道","阿寒摩周":"北海道","釧路湿原":"北海道","大雪山":"北海道","日高山脈襟裳十勝":"北海道","支笏洞爺":"北海道","十和田八幡平":"青森・岩手・秋田","三陸復興":"青森・岩手・宮城","磐梯朝日":"山形・福島・新潟","日光":"福島・栃木・群馬","尾瀬":"福島・栃木・群馬・新潟","上信越高原":"群馬・新潟・長野","妙高戸隠連山":"新潟・長野","秩父多摩甲斐":"埼玉・東京・山梨・長野","小笠原":"東京","富士箱根伊豆":"東京・神奈川・山梨・静岡","中部山岳":"新潟・富山・長野・岐阜","白山":"富山・石川・福井・岐阜","南アルプス":"山梨・長野・静岡","伊勢志摩":"三重","吉野熊野":"三重・奈良・和歌山","山陰海岸":"京都・兵庫・鳥取","瀬戸内海":"大阪・兵庫・和歌山・岡山・広島・山口・徳島・香川・愛媛・福岡・大分","大山隠岐":"鳥取・島根・岡山","足摺宇和海":"愛媛・高知","西海":"長崎","雲仙天草":"長崎・熊本・鹿児島","阿蘇くじゅう":"熊本・大分","霧島錦江湾":"宮崎・鹿児島","屋久島":"鹿児島","奄美群島":"鹿児島","やんばる":"沖縄","慶良間諸島":"沖縄","西表石垣":"沖縄"};
+const WHS_NAT=[["屋久島","鹿児島／1993"],["白神山地","青森・秋田／1993"],["知床","北海道／2005"],["小笠原諸島","東京／2011"],["奄美大島・徳之島・沖縄島北部及び西表島","鹿児島・沖縄／2021"]];
+const WHS_CUL=[["法隆寺地域の仏教建造物","奈良／1993"],["姫路城","兵庫／1993"],["古都京都の文化財","京都・滋賀／1994"],["白川郷・五箇山の合掌造り集落","岐阜・富山／1995"],["原爆ドーム","広島／1996"],["厳島神社","広島／1996"],["古都奈良の文化財","奈良／1998"],["日光の社寺","栃木／1999"],["琉球王国のグスク及び関連遺産群","沖縄／2000"],["紀伊山地の霊場と参詣道","三重・奈良・和歌山／2004"],["石見銀山遺跡とその文化的景観","島根／2007"],["平泉","岩手／2011"],["富士山—信仰の対象と芸術の源泉","山梨・静岡／2013"],["富岡製糸場と絹産業遺産群","群馬／2014"],["明治日本の産業革命遺産","岩手・静岡・山口・福岡・佐賀・長崎・熊本・鹿児島／2015"],["ル・コルビュジエの建築作品（国立西洋美術館）","東京／2016"],["「神宿る島」宗像・沖ノ島と関連遺産群","福岡／2017"],["長崎と天草地方の潜伏キリシタン関連遺産","長崎・熊本／2018"],["百舌鳥・古市古墳群","大阪／2019"],["北海道・北東北の縄文遺跡群","北海道・青森・岩手・秋田／2021"],["佐渡島の金山","新潟／2024"]];
+const TRIOS=[
+ ["日本三景","松島（宮城）／天橋立（京都）／宮島（広島）","北から松→天→宮。江戸期の儒学者・林春斎が選定"],
+ ["日本三名園","偕楽園（茨城）／兼六園（石川）／後楽園（岡山）","「か・け・こ」の順で覚える"],
+ ["日本三名泉","有馬（兵庫）／草津（群馬）／下呂（岐阜）","林羅山が選定。「あ・く・げ」"],
+ ["日本三古湯","道後（愛媛）／有馬（兵庫）／白浜（和歌山）","日本書紀・風土記に登場する古湯"],
+ ["日本三名瀑","華厳の滝（栃木）／那智の滝（和歌山）／袋田の滝（茨城）","「け・な・ふ」"],
+ ["日本三大祭","祇園祭（京都）／天神祭（大阪）／神田祭（東京）",""],
+ ["日本三大曳山祭","秩父夜祭（埼玉）／祇園祭（京都）／高山祭（岐阜）","「山・鉾・屋台行事」33件がユネスコ無形文化遺産"],
+ ["日本三大盆踊り","阿波おどり（徳島）／郡上おどり（岐阜）／西馬音内の盆踊（秋田）",""],
+ ["日本三大鍾乳洞","龍泉洞（岩手）／秋芳洞（山口）／龍河洞（高知）","「りゅう」が2つ、間に秋芳洞"],
+ ["日本三大松原","三保松原（静岡）／虹の松原（佐賀）／気比松原（福井）",""],
+ ["日本三奇橋","錦帯橋（山口）／猿橋（山梨）／祖谷のかずら橋（徳島）","※木曽の桟を挙げる説も"],
+ ["現存天守12城","弘前・松本・丸岡・犬山・彦根・姫路・松江・備中松山・丸亀・松山・宇和島・高知","四国に4城が集中するのがポイント"],
+ ["国宝5城","松本・犬山・彦根・姫路・松江","「まついひめま」。現存天守12の内数"],
+ ["日本三大和牛","松阪牛（三重）／神戸ビーフ（兵庫）／近江牛（滋賀）","※米沢牛を挙げる説も"],
+ ["日本三大うどん","讃岐（香川）／稲庭（秋田）／水沢（群馬）","※五島うどん説も"],
+ ["日本三大車窓","根室本線 狩勝峠／篠ノ井線 姨捨／肥薩線 矢岳越え","北海道・長野・熊本"],
+ ["日本三大秘境","白川郷（岐阜）／祖谷（徳島）／椎葉村（宮崎）",""],
+ ["日本三大霊場","恐山（青森）／比叡山（滋賀）／高野山（和歌山）",""]
+];
+
+/* ============================================================ */
+const PREFS=P.map((r,i)=>({i,n:r[0],region:r[1],x:r[2],y:r[3],d:r[4]}));
+const NAME2I=Object.fromEntries(PREFS.map(p=>[p.n,p.i]));
+const nm=s=>s.split("|")[0];
+const nt=s=>s.split("|")[1]||"";
+const bare=s=>nm(s).replace(/[（(〈].*?[）)〉]/g,"").trim();
+
+const ITEMS=[];
+{
+ const key=new Map();
+ PREFS.forEach(p=>CATS.forEach(c=>(p.d[c.k]||[]).forEach(raw=>{
+   const k=c.k+"|"+nm(raw);
+   if(!key.has(k)){const o={name:nm(raw),note:nt(raw),cat:c.k,prefs:[]};key.set(k,o);ITEMS.push(o);}
+   const o=key.get(k); o.prefs.push(p.i); if(!o.note&&nt(raw)) o.note=nt(raw);
+ })));
+}
+function groupsOf(name){
+  const b=bare(name);
+  return GROUPS.filter(g=>g[1].some(x=>b.startsWith(x)||x.startsWith(b)&&b.length>1)).map(g=>g[0]);
+}
+function findItem(memberName){
+  return ITEMS.find(it=>bare(it.name).startsWith(memberName)||memberName.startsWith(bare(it.name)));
+}
+const esc=s=>String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
+
+let progress={};
+const REGIONS=["北海道","東北","関東","中部","近畿","中国","四国","九州","沖縄"];
+
+/* ---------- 地図 ---------- */
+function buildMap(el,onClick){
+  el.innerHTML="";
+  PREFS.forEach(p=>{
+    const b=document.createElement("button");
+    b.className="pref";b.style.left=p.x+"%";b.style.top=p.y+"%";
+    b.textContent=p.n;b.dataset.i=p.i;b.setAttribute("aria-label",p.n);
+    b.addEventListener("click",()=>onClick(p.i));
+    el.appendChild(b);
+  });
+}
+const mapbox=document.getElementById("mapbox"),qmapbox=document.getElementById("qmapbox");
+
+document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute("aria-selected",x===b));
+  ["map","quiz","list"].forEach(t=>document.getElementById("tab-"+t).classList.toggle("hidden",t!==b.dataset.tab));
+  if(b.dataset.tab==="quiz"&&!quizState.q) nextQuestion();
+  if(b.dataset.tab==="list"&&!listBuilt) buildList();
+}));
+
+let activeCat="all",activeRegion="all",selected=null,highlight=null,curItem=null;
+
+const chipsEl=document.getElementById("chips");
+function buildChips(){
+  chipsEl.innerHTML="";
+  const mk=(k,label,cls)=>{
+    const b=document.createElement("button");b.className="chip "+(cls||"");
+    b.setAttribute("aria-pressed",activeCat===k);
+    b.innerHTML=(cls?'<span class="dot"></span>':'')+label;
+    b.addEventListener("click",()=>{activeCat=k;buildChips();paintMap();renderPanel();});
+    chipsEl.appendChild(b);
+  };
+  mk("all","すべて","");CATS.forEach(c=>mk(c.k,c.label,c.cls));
+}
+const regEl=document.getElementById("regchips");
+function buildRegChips(){
+  regEl.innerHTML="";
+  const mk=(k,label)=>{
+    const b=document.createElement("button");b.className="chip sm";
+    b.setAttribute("aria-pressed",activeRegion===k);b.textContent=label;
+    b.addEventListener("click",()=>{activeRegion=k;buildRegChips();paintMap();});
+    regEl.appendChild(b);
+  };
+  mk("all","全国");REGIONS.forEach(r=>mk(r,r));
+}
+function countFor(p){
+  return activeCat==="all"?CATS.reduce((s,c)=>s+(p.d[c.k]||[]).length,0):(p.d[activeCat]||[]).length;
+}
+function paintMap(){
+  const maxC=Math.max(...PREFS.map(countFor),1);
+  const base=activeCat==="all"?"var(--ai)":CATCOLOR[activeCat];
+  [...mapbox.children].forEach(b=>{
+    const p=PREFS[+b.dataset.i],c=countFor(p),t=c/maxC;
+    b.className="pref";
+    b.style.background=c===0?"#fff":`color-mix(in srgb, ${base} ${Math.round(14+t*72)}%, #ffffff)`;
+    b.style.color=t>.48?"#fff":"var(--sumi)";
+    b.style.borderColor=c===0?"var(--line)":"transparent";
+    if(selected===p.i)b.classList.add("sel");
+    if(highlight){highlight.prefs.includes(p.i)?b.classList.add("hit"):b.classList.add("dim");}
+    else if(activeRegion!=="all"&&p.region!==activeRegion)b.classList.add("dim");
+    if(progress[p.n]){const m=document.createElement("span");m.className="mark";b.appendChild(m);}
+  });
+  document.getElementById("legend").textContent=
+    highlight?`「${highlight.label}」→ ${highlight.prefs.map(i=>PREFS[i].n).join("・")||"該当なし"}`
+    :(activeCat==="all"?"色が濃いほど掲載項目が多い県":`${CATMAP[activeCat].label}の分布（濃い＝多い）`);
+  document.getElementById("clearHl").classList.toggle("hidden",!highlight);
+  document.getElementById("pgN").textContent=Object.values(progress).filter(Boolean).length;
+}
+document.getElementById("clearHl").addEventListener("click",()=>{
+  highlight=null;curItem=null;document.getElementById("search").value="";paintMap();renderPanel();
+});
+document.getElementById("blank").addEventListener("change",e=>document.body.classList.toggle("blank",e.target.checked));
+
+/* ---------- パネル ---------- */
+function setItem(it){
+  curItem=it;
+  highlight={prefs:it.prefs.slice(),label:it.name};
+  paintMap();renderPanel();
+  mapbox.scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+/* ---- 写真（Wikipediaのサムネイルを実行時に取得。失敗時は検索リンク） ---- */
+const thumbCache=new Map();
+function wikiTitle(it){
+  let b=bare(it.name).split("・")[0].split("／")[0].trim();
+  if(it.cat==="o"&&!/温泉/.test(b)) b+="温泉";
+  if(it.cat==="p") b+=/〈国定〉/.test(it.name)?"国定公園":"国立公園";
+  if(it.cat==="a"&&!/空港/.test(b)) b+="空港";
+  const fix={"宮島":"厳島","江戸城跡":"江戸城","春日山城跡":"春日山城","安土城跡":"安土城",
+    "名護屋城跡":"名護屋城","岡城跡":"岡城 (豊後国)","鶴丸城跡":"鹿児島城","平城宮跡":"平城宮",
+    "東京国際空港":"東京国際空港","中部国際空港":"中部国際空港","阿蘇くまもと空港":"熊本空港"};
+  return fix[b]||b;
+}
+async function fillThumb(fig){
+  if(!document.getElementById("photo").checked){fig.remove();return;}
+  const title=fig.dataset.thumb, q=fig.dataset.q;
+  const fail=()=>{
+    fig.classList.remove("loading");
+    fig.outerHTML=`<a class="imglink" target="_blank" rel="noopener"
+      href="https://www.google.com/search?tbm=isch&q=${q}">画像を検索して見る ↗</a>`;
+  };
+  try{
+    let data=thumbCache.get(title);
+    if(data===undefined){
+      const r=await fetch("https://ja.wikipedia.org/api/rest_v1/page/summary/"+encodeURIComponent(title));
+      data=r.ok?await r.json():null;
+      thumbCache.set(title,data);
+    }
+    const src=data&&(data.thumbnail&&data.thumbnail.source);
+    if(!src){fail();return;}
+    const img=new Image();
+    img.onload=()=>{
+      fig.classList.remove("loading");
+      fig.innerHTML="";
+      fig.appendChild(img);
+      const cap=document.createElement("figcaption");
+      cap.textContent=(data.titles&&data.titles.normalized||title)+"／Wikipedia";
+      fig.appendChild(cap);
+    };
+    img.onerror=fail;
+    img.src=src; img.alt=title;
+  }catch(e){fail();}
+}
+const loadThumbs=root=>root.querySelectorAll(".dimg").forEach(fillThumb);
+
+function detailHTML(it){
+  const c=CATMAP[it.cat];
+  const gs=groupsOf(it.name);
+  let g="";
+  gs.forEach(gname=>{
+    const mem=GROUPS.find(x=>x[0]===gname)[1];
+    g+=`<div class="dgrp"><b>${esc(gname)}</b><br>`+mem.map(mn=>{
+      const t=findItem(mn);
+      const pf=t?t.prefs.map(i=>PREFS[i].n).join("・"):"";
+      const cur=t&&t.name===it.name?" cur":"";
+      return `<span class="gi${cur}" data-jump="${esc(mn)}">${esc(mn)}${pf?`<span style="opacity:.65"> ${esc(pf)}</span>`:""}</span>`;
+    }).join("")+`</div>`;
+  });
+  const q=encodeURIComponent(bare(it.name)+" "+PREFS[it.prefs[0]].n);
+  return `<div class="detail" style="border-left-color:${CATCOLOR[it.cat]}">
+    <div><span class="dn">${esc(it.name)}</span><span class="dc" style="background:${CATCOLOR[it.cat]}">${c.label}</span></div>
+    ${it.note?`<div class="dnote">${esc(it.note)}</div>`:""}
+    <figure class="dimg loading" data-thumb="${esc(wikiTitle(it))}" data-q="${q}">読み込み中…</figure>
+    <div class="dpref">所在：${it.prefs.map(i=>`<b>${PREFS[i].n}</b>`).join("・")}</div>${g}</div>`;
+}
+function renderPanel(){
+  const el=document.getElementById("panel");
+  if(selected===null&&!curItem){el.innerHTML="";return;}
+  let html="";
+  if(curItem) html+=`<div class="panel">${detailHTML(curItem)}`;
+  if(selected!==null){
+    const p=PREFS[selected];
+    if(!curItem) html+=`<div class="panel">`;
+    html+=`<h2>${p.n}</h2><div class="region">${p.region}地方</div>`;
+    const nb=ADJ[p.n]||[];
+    if(nb.length) html+=`<div class="nbr"><span>隣接</span>${nb.map(n=>`<button data-pref="${n}">${n}</button>`).join("")}</div>`;
+    const cats=activeCat==="all"?CATS:CATS.filter(c=>c.k===activeCat);
+    cats.forEach(c=>{
+      const arr=p.d[c.k]||[];
+      html+=`<div class="grp ${c.cls}"><h3>${c.label}</h3>`;
+      html+=arr.length?`<div class="items">${arr.map(raw=>{
+        const n=nm(raw);const on=curItem&&curItem.cat===c.k&&curItem.name===n;
+        return `<button class="item${nt(raw)?" hasnote":""}${on?" on":""}" data-cat="${c.k}" data-nm="${esc(n)}">${esc(n)}</button>`;
+      }).join("")}</div>`:`<div class="empty">掲載なし</div>`;
+      html+=`</div>`;
+    });
+    html+=`<div class="done"><span>この県は覚えた？</span><button id="doneBtn" aria-pressed="${!!progress[p.n]}">${progress[p.n]?"✓ 覚えた":"チェックする"}</button></div>`;
+  }
+  html+=`</div>`;
+  el.innerHTML=html;
+
+  el.querySelectorAll(".item").forEach(b=>b.addEventListener("click",()=>{
+    const it=ITEMS.find(x=>x.cat===b.dataset.cat&&x.name===b.dataset.nm);
+    if(!it)return;
+    if(curItem&&curItem.name===it.name&&curItem.cat===it.cat){curItem=null;highlight=null;paintMap();renderPanel();}
+    else setItem(it);
+  }));
+  el.querySelectorAll("[data-pref]").forEach(b=>b.addEventListener("click",()=>{
+    selected=NAME2I[b.dataset.pref];curItem=null;highlight=null;paintMap();renderPanel();
+    mapbox.scrollIntoView({behavior:"smooth",block:"nearest"});
+  }));
+  el.querySelectorAll("[data-jump]").forEach(b=>b.addEventListener("click",()=>{
+    const t=findItem(b.dataset.jump);
+    if(t){selected=t.prefs[0];setItem(t);}
+  }));
+  const db=document.getElementById("doneBtn");
+  if(db)db.addEventListener("click",()=>{progress[PREFS[selected].n]=!progress[PREFS[selected].n];saveProgress();renderPanel();paintMap();});
+  loadThumbs(el);
+}
+document.getElementById("photo").addEventListener("change",()=>renderPanel());
+
+buildMap(mapbox,i=>{selected=i;curItem=null;highlight=null;paintMap();renderPanel();});
+buildChips();buildRegChips();paintMap();
+
+document.getElementById("search").addEventListener("input",e=>{
+  const q=e.target.value.trim();
+  if(!q){highlight=null;curItem=null;paintMap();renderPanel();return;}
+  const uq=q.toUpperCase();
+  const gHit=GROUPS.filter(g=>g[0].includes(q));
+  let hits=ITEMS.filter(it=>it.name.includes(q)||bare(it.name).includes(q)||it.note.includes(q)||it.note.toUpperCase().includes(uq));
+  if(gHit.length){gHit.forEach(g=>g[1].forEach(mn=>{const t=findItem(mn);if(t&&!hits.includes(t))hits.push(t);}));}
+  const prefHit=PREFS.filter(p=>p.n.includes(q)).map(p=>p.i);
+  const prefs=[...new Set([...hits.flatMap(h=>h.prefs),...prefHit])];
+  highlight={prefs,label:gHit.length?gHit[0][0]:(hits.length?hits.slice(0,3).map(h=>h.name).join("／")+(hits.length>3?` ほか${hits.length-3}`:""):q+"（該当なし）")};
+  selected=null;curItem=hits.length===1?hits[0]:null;
+  paintMap();renderPanel();
+});
+
+/* ---------- クイズ ---------- */
+const quizState={cat:"all",q:null,answered:false,ok:0,all:0};
+const qchips=document.getElementById("qchips");
+function buildQChips(){
+  qchips.innerHTML="";
+  const mk=(k,label,cls)=>{
+    const b=document.createElement("button");b.className="chip "+(cls||"");
+    b.setAttribute("aria-pressed",quizState.cat===k);
+    b.innerHTML=(cls?'<span class="dot"></span>':'')+label;
+    b.addEventListener("click",()=>{quizState.cat=k;buildQChips();nextQuestion();});
+    qchips.appendChild(b);
+  };
+  mk("all","全分野","");CATS.forEach(c=>mk(c.k,c.label,c.cls));
+}
+buildQChips();buildMap(qmapbox,i=>answerMap(i));
+const pool=()=>ITEMS.filter(it=>quizState.cat==="all"||it.cat===quizState.cat);
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+
+function nextQuestion(){
+  const it=pick(pool());
+  const type=Math.random()<.55?"map":"choice";
+  quizState.q={it,type};quizState.answered=false;
+  document.getElementById("qfeedback").innerHTML="";
+  document.getElementById("qchoices").innerHTML="";
+  [...qmapbox.children].forEach(b=>{b.className="pref";b.style.background="#fff";b.style.color="var(--sumi)";b.style.borderColor="var(--line)";});
+  document.getElementById("qmeta").textContent=CATMAP[it.cat].label+"　"+(type==="map"?"地図で答える":"4択");
+  if(type==="map"){
+    qmapbox.classList.remove("hidden");
+    document.getElementById("qtext").textContent=`「${it.name}」があるのは？`;
+    document.getElementById("qhint").textContent="地図から都道府県をタップ";
+  }else{
+    qmapbox.classList.add("hidden");
+    const p=PREFS[pick(it.prefs)];quizState.q.pref=p;
+    document.getElementById("qtext").textContent=`${p.n}の「${CATMAP[it.cat].label}」はどれ？`;
+    document.getElementById("qhint").textContent="";
+    const wrongs=ITEMS.filter(x=>x.cat===it.cat&&!x.prefs.includes(p.i));
+    const opts=[it.name];let guard=0;
+    while(opts.length<4&&wrongs.length&&guard++<60){const w=pick(wrongs).name;if(!opts.includes(w))opts.push(w);}
+    opts.sort(()=>Math.random()-.5);
+    const qc=document.getElementById("qchoices");
+    opts.forEach(o=>{const b=document.createElement("button");b.textContent=o;b.addEventListener("click",()=>answerChoice(b,o,it));qc.appendChild(b);});
+  }
+}
+function scoreUp(ok){
+  quizState.all++;if(ok)quizState.ok++;
+  document.getElementById("sOk").textContent=quizState.ok;
+  document.getElementById("sAll").textContent=quizState.all;
+  document.getElementById("sPct").textContent=Math.round(quizState.ok/quizState.all*100)+"%";
+}
+function answerMap(i){
+  if(quizState.answered||quizState.q.type!=="map")return;
+  quizState.answered=true;
+  const it=quizState.q.it,ok=it.prefs.includes(i);
+  [...qmapbox.children].forEach(b=>{
+    const pi=+b.dataset.i;
+    if(it.prefs.includes(pi))b.classList.add("right");else if(pi===i)b.classList.add("wrong");
+  });
+  scoreUp(ok);showFeedback(ok,it);
+}
+function answerChoice(btn,o,it){
+  if(quizState.answered)return;quizState.answered=true;
+  const ok=(o===it.name);
+  [...document.getElementById("qchoices").children].forEach(b=>{
+    if(b.textContent===it.name)b.classList.add("right");else if(b===btn&&!ok)b.classList.add("wrong");
+  });
+  scoreUp(ok);showFeedback(ok,it);
+}
+function showFeedback(ok,it){
+  const names=it.prefs.map(i=>PREFS[i].n).join("・");
+  const p0=PREFS[it.prefs[0]];
+  const gs=groupsOf(it.name);
+  const chain=CATS.filter(c=>c.k!==it.cat).map(c=>{
+    const a=(p0.d[c.k]||[]).slice(0,2).map(nm);return a.length?`${c.label}：${a.join("・")}`:null;
+  }).filter(Boolean).slice(0,4).join("　／　");
+  const fb=document.getElementById("qfeedback");
+  fb.innerHTML=
+   `<div class="feedback" style="border-color:${ok?'var(--ok)':'var(--ng)'}">
+     <b>${ok?"正解":"不正解"}</b>　${esc(it.name)} → <b>${names}</b>
+     ${it.note?`<div class="fnote">${esc(it.note)}</div>`:""}
+     <figure class="dimg loading" data-thumb="${esc(wikiTitle(it))}" data-q="${encodeURIComponent(bare(it.name)+" "+p0.n)}">読み込み中…</figure>
+     ${gs.length?`<div class="fnote" style="color:var(--ai)">${gs.map(g=>"〈"+esc(g)+"〉").join(" ")}　${esc(GROUPS.find(x=>x[0]===gs[0])[1].join("・"))}</div>`:""}
+     <div class="fchain">${p0.n}の周辺　${esc(chain)}</div>
+   </div>`;
+  loadThumbs(fb);
+}
+document.getElementById("qnext").addEventListener("click",nextQuestion);
+document.getElementById("qreset").addEventListener("click",()=>{
+  quizState.ok=0;quizState.all=0;
+  document.getElementById("sOk").textContent=0;document.getElementById("sAll").textContent=0;
+  document.getElementById("sPct").textContent="—";nextQuestion();
+});
+
+/* ---------- 横断まとめ ---------- */
+let listBuilt=false;
+function jumpTo(names,label){
+  highlight={prefs:names.map(n=>NAME2I[n]).filter(v=>v!==undefined),label};
+  selected=null;curItem=null;
+  document.querySelector('.tabs button[data-tab="map"]').click();
+  paintMap();renderPanel();
+  mapbox.scrollIntoView({behavior:"smooth",block:"center"});
+}
+const prefsFromText=t=>PREFS.map(p=>p.n).filter(n=>t.includes(n));
+function buildList(){
+  listBuilt=true;let h="";
+  h+=`<div class="section"><h2>国立公園 35</h2><div class="note">北→南の公式順。2024年に日高山脈襟裳十勝が加わり35か所（ほかに国定公園57）。</div>`;
+  PARKS.forEach((n,i)=>h+=`<div class="row" data-pf="${esc(PARK_PREF[n])}" data-lb="${esc(n+'国立公園')}"><span class="num">${String(i+1).padStart(2,"0")}</span><span>${esc(n)}</span><span class="pf">${esc(PARK_PREF[n])}</span></div>`);
+  h+=`</div><div class="section"><h2>世界自然遺産 5</h2>`;
+  WHS_NAT.forEach((r,i)=>h+=`<div class="row" data-pf="${esc(r[1])}" data-lb="${esc(r[0])}"><span class="num">自${i+1}</span><span>${esc(r[0])}</span><span class="pf">${esc(r[1])}</span></div>`);
+  h+=`</div><div class="section"><h2>世界文化遺産 21</h2><div class="note">登録年順。自然5と合わせて計26。</div>`;
+  WHS_CUL.forEach((r,i)=>h+=`<div class="row" data-pf="${esc(r[1])}" data-lb="${esc(r[0])}"><span class="num">${String(i+1).padStart(2,"0")}</span><span>${esc(r[0])}</span><span class="pf">${esc(r[1])}</span></div>`);
+  h+=`</div><div class="section"><h2>「三大◯◯」総ざらい</h2><div class="note">タップすると該当県が地図に出ます。</div>`;
+  TRIOS.forEach(t=>h+=`<div class="trio" data-pf="${esc(t[1])}" data-lb="${esc(t[0])}"><h3>${esc(t[0])}</h3><p>${esc(t[1])}</p>${t[2]?`<div class="tip">${esc(t[2])}</div>`:""}</div>`);
+  h+=`</div><div class="section"><h2>空港コード</h2><div class="note">3レターコード。定期便のある主要空港。</div>`;
+  ITEMS.filter(i=>i.cat==="a").sort((a,b)=>a.note.localeCompare(b.note)).forEach(it=>{
+    const code=(it.note.match(/[A-Z]{3}/)||[""])[0];
+    h+=`<div class="row" data-pf="${esc(it.prefs.map(i=>PREFS[i].n).join("・"))}" data-lb="${esc(it.name)}"><span class="num">${esc(code)}</span><span>${esc(it.name)}</span><span class="pf">${esc(it.prefs.map(i=>PREFS[i].n).join("・"))}</span></div>`;
+  });
+  h+=`</div>`;
+  const el=document.getElementById("listbody");el.innerHTML=h;
+  el.querySelectorAll("[data-pf]").forEach(r=>{
+    r.style.cursor="pointer";
+    r.addEventListener("click",()=>{
+      const names=prefsFromText(r.dataset.pf);
+      jumpTo(names.length?names:prefsFromText(r.dataset.lb),r.dataset.lb);
+    });
+  });
+}
+
+/* ---------- 進捗（Claude内はwindow.storage、外部ホスティングでは端末に保存） ---------- */
+const KEY="chiri-progress";
+async function loadProgress(){
+  try{
+    if(window.storage){const r=await window.storage.get(KEY);if(r&&r.value)progress=JSON.parse(r.value);}
+    else{const v=window.localStorage.getItem(KEY);if(v)progress=JSON.parse(v);}
+  }catch(e){progress={};}
+  paintMap();
+}
+async function saveProgress(){
+  try{
+    if(window.storage)await window.storage.set(KEY,JSON.stringify(progress));
+    else window.localStorage.setItem(KEY,JSON.stringify(progress));
+  }catch(e){}
+}
+loadProgress();
+</script>
+</body>
+</html>
