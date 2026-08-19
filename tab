@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>フレーズ再生機（モバイル）</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;}
+body{margin:0;background:#15110f;color:#e8e2d6;font-family:-apple-system,"Hiragino Sans",system-ui,sans-serif;padding:12px 10px 90px;font-size:15px;}
+h1{font-size:17px;margin:0 0 2px;} h1 span{color:#5b9aa8;}
+.sub{font-size:12px;color:#8a7d6e;margin:0 0 12px;line-height:1.5;}
+
+/* モード切替 */
+.modes{display:flex;gap:6px;margin-bottom:12px;}
+.modes button{flex:1;background:#211a16;border:1px solid #352b25;color:#8a7d6e;border-radius:9px;padding:11px 4px;font-size:14px;font-weight:700;cursor:pointer;}
+.modes button.on{background:#5b9aa8;border-color:#5b9aa8;color:#0f0c0a;}
+
+/* フレーズ選択 */
+.plist{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+.pbtn{background:#1a1512;border:1px solid #352b25;border-radius:9px;padding:9px 11px;color:#e8e2d6;font-size:13px;cursor:pointer;}
+.pbtn.on{background:#5b9aa8;border-color:#5b9aa8;color:#0f0c0a;font-weight:700;}
+
+/* 大きい操作ボタン */
+.bigrow{display:flex;gap:8px;margin-bottom:10px;}
+.bigrow button{flex:1;background:#211a16;border:1px solid #352b25;color:#e8e2d6;border-radius:10px;padding:15px 6px;font-size:16px;font-weight:700;cursor:pointer;}
+.bigrow button.play{background:#5b9aa8;border-color:#5b9aa8;color:#0f0c0a;}
+.bigrow button.on{background:#5b9aa8;border-color:#5b9aa8;color:#0f0c0a;}
+.speedrow{display:flex;gap:6px;margin-bottom:12px;}
+.speedrow button{flex:1;background:#211a16;border:1px solid #352b25;color:#8a7d6e;border-radius:8px;padding:10px 2px;font-size:13px;cursor:pointer;}
+.speedrow button.on{background:#352b25;color:#e8e2d6;border-color:#5b9aa8;}
+
+/* 現在音の大表示 */
+.now{background:#1a1512;border:1px solid #352b25;border-radius:12px;padding:14px;text-align:center;margin-bottom:12px;}
+.now .nm{font-size:34px;font-weight:800;color:#5b9aa8;line-height:1.1;font-family:ui-monospace,monospace;}
+.now .meta{font-size:13px;color:#8a7d6e;font-family:ui-monospace,monospace;margin-top:4px;}
+
+/* シーケンス */
+.seq{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px;min-height:20px;}
+.step{border:1px solid #352b25;border-radius:6px;padding:5px 6px;text-align:center;min-width:42px;background:#1a1512;font-family:ui-monospace,monospace;}
+.step.now{background:#5b9aa8;border-color:#5b9aa8;color:#0f0c0a;}
+.step .a{font-size:13px;font-weight:700;} .step .b{font-size:9px;opacity:.7;}
+
+/* 指板：モバイルは縦スクロールなしで収まるよう調整 */
+.fbwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -10px;padding:0 10px 6px;}
+table.fb{border-collapse:collapse;}
+td,th{padding:0;text-align:center;}
+.frnum{font-size:10px;color:#8a7d6e;font-family:ui-monospace,monospace;height:18px;}
+.frnum.mark{color:#5b9aa8;font-weight:700;}
+.sl{font-size:11px;color:#8a7d6e;padding-right:5px;text-align:right;font-family:ui-monospace,monospace;}
+.cell{width:40px;height:38px;border:1px solid #0d0a08;position:relative;background:#241c18;cursor:pointer;}
+.nut{border-right:3px solid #c9b79a;}
+.line{position:absolute;left:0;right:0;top:50%;height:1px;background:#8a7d6e;transform:translateY(-50%);pointer-events:none;}
+.nt{position:absolute;inset:4px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:ui-monospace,monospace;pointer-events:none;transition:transform .07s,box-shadow .07s;}
+.n-root{background:#5b9aa8;color:#0f0c0a;} .n-third{background:#c98a4a;color:#0f0c0a;}
+.n-fifth{background:#7fae8a;color:#0f0c0a;} .n-scale{background:#3d4f4a;color:#e8e2d6;}
+.n-other{background:transparent;color:#3a332e;border:1px solid #241f1b;}
+.cell.inp .nt{outline:2px solid rgba(232,226,214,.35);}
+.cell.hit .nt{transform:scale(1.4);box-shadow:0 0 0 3px #fff,0 0 14px 4px rgba(255,255,255,.5);z-index:5;}
+
+.tools{display:flex;gap:8px;margin:12px 0;}
+.tools button{flex:1;background:#211a16;border:1px solid #352b25;color:#e8e2d6;border-radius:9px;padding:13px 4px;font-size:14px;font-weight:700;cursor:pointer;}
+.tools button.danger{color:#d99;border-color:#5a3535;}
+.tip{font-size:12px;color:#8a7d6e;line-height:1.6;background:#1a1512;border:1px solid #352b25;border-radius:9px;padding:11px;margin-top:10px;}
+.tip b{color:#e8e2d6;}
+.legend{display:flex;flex-wrap:wrap;gap:9px;font-size:11px;color:#8a7d6e;margin-bottom:8px;}
+.legend span.d{width:12px;height:12px;border-radius:50%;display:inline-block;vertical-align:-2px;margin-right:3px;}
+</style>
+</head>
+<body>
+<h1>フレーズ<span>再生機</span></h1>
+<p class="sub">キー F major（ただ君に晴れ）。<b style="color:#e8e2d6">全部タップで操作</b>。文字入力は不要です。</p>
+
+<div class="modes">
+  <button class="on" id="mPlay">▶ 再生する</button>
+  <button id="mMake">✎ 自分で作る</button>
+</div>
+
+<!-- 再生モード -->
+<div id="paneA">
+  <div class="plist" id="plist"></div>
+</div>
+
+<!-- 作成モード -->
+<div id="paneB" style="display:none;">
+  <div class="tip" style="margin-top:0;margin-bottom:10px;">
+    <b>指板をタップするだけ</b>で、下の帯にフレーズが1音ずつ足されます。<br>
+    譜面を見ながら「1弦10f」なら1弦の10をタップ。間違えたら「1つ戻す」。
+  </div>
+  <div class="tools">
+    <button id="undo">← 1つ戻す</button>
+    <button id="clear" class="danger">全部消す</button>
+  </div>
+</div>
+
+<div class="now" id="now">
+  <div class="nm">—</div>
+  <div class="meta">再生するか、指板をタップ</div>
+</div>
+
+<div class="seq" id="seq"></div>
+
+<div class="bigrow">
+  <button class="play" id="play">▶ 再生</button>
+  <button class="on" id="loop">🔁 ループ</button>
+  <button id="step1">▶| 1音</button>
+</div>
+<div class="speedrow" id="speeds">
+  <button data-v="1000">超ゆっくり</button>
+  <button data-v="650" class="on">ゆっくり</button>
+  <button data-v="430">ふつう</button>
+  <button data-v="280">速め</button>
+</div>
+
+<div class="legend">
+  <div><span class="d" style="background:#5b9aa8"></span>1度F</div>
+  <div><span class="d" style="background:#c98a4a"></span>3度A</div>
+  <div><span class="d" style="background:#7fae8a"></span>5度C</div>
+  <div><span class="d" style="background:#3d4f4a"></span>スケール音</div>
+</div>
+<div class="fbwrap"><table class="fb" id="board"></table></div>
+
+<div class="tip">
+  <b>使い方：</b>まず「超ゆっくり」で、光る位置を目で追いながら一緒に弾く。指が覚えたら速度を上げる。<br>
+  <b>自分で作る:</b> 譜面のソロを指板タップで入力 → そのまま再生・ループ。打ち込む作業自体が譜読みの練習になります。
+</div>
+
+<script>
+const NM=["C","C#","D","D#","E","F","F#","G","G#","A","B♭","B"];
+const DG=["1","b2","2","b3","3","4","#4","5","b6","6","b7","7"];
+const OPEN=[64,59,55,50,45,40], LAB=["1e","2B","3G","4D","5A","6E"];
+const F0=0,F1=15, DOTS=[3,5,7,9,15], DBL=[12], TONIC=5;
+const SC=[0,2,4,5,7,9,11].map(x=>(TONIC+x)%12);
+
+const PH=[
+  {n:"ソロ 1小節目", n2:[[1,10],[1,10],[1,13],[1,10],[1,13],[1,10]]},
+  {n:"ソロ 1-2小節", n2:[[1,10],[1,10],[1,13],[1,10],[1,13],[1,13],[1,10],[1,13],[1,10],[1,12]]},
+  {n:"10fの箱", n2:[[4,10],[4,12],[3,10],[3,12],[2,10],[2,11],[2,13],[1,10],[1,12],[1,13]]},
+  {n:"B♭ 着地", n2:[[1,13],[1,10],[2,13],[1,13]]},
+  {n:"F 着地", n2:[[1,13],[2,10],[2,13],[1,13]]},
+  {n:"C 着地", n2:[[2,13],[1,12],[3,12],[2,13]]},
+  {n:"Dm 着地", n2:[[1,10],[1,13],[2,10],[1,10]]},
+];
+let custom=[];
+let makeMode=false, cur=0, idx=-1, playing=false, timer=null, loop=true, spd=650;
+
+let ac=null;
+function A(){ if(!ac)ac=new(window.AudioContext||window.webkitAudioContext)(); if(ac.state==="suspended")ac.resume(); return ac; }
+function tone(m,d=.7,v=.3){
+  const c=A(),f=440*Math.pow(2,(m-69)/12),t=c.currentTime;
+  const o=c.createOscillator(),g=c.createGain(),o2=c.createOscillator(),g2=c.createGain();
+  o.type="triangle";o.frequency.value=f;o2.type="sine";o2.frequency.value=f*2;g2.gain.value=.1;
+  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+.006);
+  g.gain.exponentialRampToValueAtTime(.0001,t+d);
+  o.connect(g);o2.connect(g2);g2.connect(g);g.connect(c.destination);
+  o.start(t);o2.start(t);o.stop(t+d+.05);o2.stop(t+d+.05);
+}
+const midi=(s,f)=>OPEN[s-1]+f, pc=(s,f)=>midi(s,f)%12;
+function cls(p){const d=((p-TONIC)%12+12)%12;
+  if(d===0)return"n-root"; if(d===4)return"n-third"; if(d===7)return"n-fifth";
+  return SC.includes(p)?"n-scale":"n-other";}
+const notes=()=>makeMode?custom:PH[cur].n2;
+
+function board(){
+  const b=document.getElementById("board"); b.innerHTML="";
+  const set=new Set(notes().map(([s,f])=>s+"-"+f));
+  let h="<tr><th></th>";
+  for(let f=F0;f<=F1;f++) h+=`<th class="frnum${(DOTS.includes(f)||DBL.includes(f))?" mark":""}">${f}</th>`;
+  b.innerHTML=h+"</tr>";
+  for(let s=1;s<=6;s++){
+    let r=`<tr><td class="sl">${LAB[s-1]}</td>`;
+    for(let f=F0;f<=F1;f++){
+      const p=pc(s,f);
+      r+=`<td class="cell${f===0?" nut":""}${set.has(s+"-"+f)?" inp":""}" data-s="${s}" data-f="${f}"><div class="line"></div><div class="nt ${cls(p)}">${NM[p]}</div></td>`;
+    }
+    b.innerHTML+=r+"</tr>";
+  }
+}
+function seq(){
+  const w=document.getElementById("seq"); w.innerHTML="";
+  notes().forEach(([s,f],i)=>{
+    const p=pc(s,f), d=document.createElement("div");
+    d.className="step"+(i===idx?" now":"");
+    d.innerHTML=`<div class="a">${NM[p]}</div><div class="b">${s}弦${f}</div>`;
+    d.addEventListener("click",()=>{stop();idx=i;hit();});
+    w.appendChild(d);
+  });
+}
+function nowBox(s,f){
+  const el=document.getElementById("now");
+  if(s==null){ el.innerHTML=`<div class="nm">—</div><div class="meta">再生するか、指板をタップ</div>`; return; }
+  const p=pc(s,f);
+  el.innerHTML=`<div class="nm">${NM[p]}</div><div class="meta">${s}弦 ${f}f ／ キー内 ${DG[((p-TONIC)%12+12)%12]}度${idx>=0?` ／ ${idx+1}/${notes().length}`:""}</div>`;
+}
+function clearHit(){document.querySelectorAll(".cell.hit").forEach(c=>c.classList.remove("hit"));}
+function hit(){
+  const n=notes(); if(!n.length)return;
+  clearHit(); const [s,f]=n[idx]; tone(midi(s,f));
+  const c=document.querySelector(`.cell[data-s="${s}"][data-f="${f}"]`);
+  if(c){c.classList.add("hit"); c.scrollIntoView({inline:"center",block:"nearest",behavior:"smooth"});}
+  seq(); nowBox(s,f);
+}
+function step(){
+  const n=notes(); if(!n.length){stop();return;}
+  idx++;
+  if(idx>=n.length){ if(loop)idx=0; else {stop();idx=-1;clearHit();seq();nowBox(null);return;} }
+  hit();
+}
+function start(){ if(!notes().length)return; playing=true; document.getElementById("play").textContent="⏸ 停止"; step(); timer=setInterval(step,spd); }
+function stop(){ playing=false; document.getElementById("play").textContent="▶ 再生"; clearInterval(timer); }
+
+function plist(){
+  const w=document.getElementById("plist"); w.innerHTML="";
+  PH.forEach((p,i)=>{
+    const b=document.createElement("button");
+    b.className="pbtn"+(i===cur?" on":""); b.textContent=p.n;
+    b.addEventListener("click",()=>{stop();cur=i;idx=-1;plist();board();seq();nowBox(null);});
+    w.appendChild(b);
+  });
+}
+function refresh(){ board(); seq(); nowBox(null); }
+
+document.getElementById("board").addEventListener("pointerdown",e=>{
+  const c=e.target.closest(".cell"); if(!c)return;
+  const s=+c.dataset.s,f=+c.dataset.f;
+  tone(midi(s,f)); clearHit(); c.classList.add("hit");
+  setTimeout(()=>c.classList.remove("hit"),200);
+  if(makeMode){ stop(); custom.push([s,f]); idx=-1; refresh(); }
+  else { idx=-1; }
+  nowBox(s,f);
+});
+document.getElementById("mPlay").addEventListener("click",()=>{
+  makeMode=false; stop(); idx=-1;
+  document.getElementById("mPlay").classList.add("on");
+  document.getElementById("mMake").classList.remove("on");
+  document.getElementById("paneA").style.display="";
+  document.getElementById("paneB").style.display="none";
+  refresh();
+});
+document.getElementById("mMake").addEventListener("click",()=>{
+  makeMode=true; stop(); idx=-1;
+  document.getElementById("mMake").classList.add("on");
+  document.getElementById("mPlay").classList.remove("on");
+  document.getElementById("paneB").style.display="";
+  document.getElementById("paneA").style.display="none";
+  refresh();
+});
+document.getElementById("undo").addEventListener("click",()=>{stop();custom.pop();idx=-1;refresh();});
+document.getElementById("clear").addEventListener("click",()=>{stop();custom=[];idx=-1;refresh();});
+document.getElementById("play").addEventListener("click",()=>{playing?stop():start();});
+document.getElementById("loop").addEventListener("click",e=>{loop=!loop;e.target.classList.toggle("on",loop);});
+document.getElementById("step1").addEventListener("click",()=>{stop();step();});
+document.querySelectorAll("#speeds button").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll("#speeds button").forEach(x=>x.classList.remove("on"));
+  b.classList.add("on"); spd=+b.dataset.v;
+  if(playing){clearInterval(timer);timer=setInterval(step,spd);}
+}));
+
+plist(); refresh();
+</script>
+</body>
+</html>
